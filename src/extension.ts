@@ -1,121 +1,121 @@
-import * as vscode from 'vscode';
-import { getContentFromFilesystem, MarkdownTestData, TestCase, testData, TestFile } from './testTree';
+import * as vscode from "vscode";
+import { TextDecoder } from "util";
+import { basename } from "path";
+import * as yaml from "js-yaml";
+import { parseFailureMessage, run as venomRun, TestSuite } from "./venom";
 
-export async function activate(context: vscode.ExtensionContext) {
-  const ctrl = vscode.tests.createTestController('mathTestController', 'Markdown Math');
+// Used to read files from disk
+const textDecoder = new TextDecoder("utf-8");
+// Used to log output of the Venom extension
+const outputChannel = vscode.window.createOutputChannel("Venom");
+// Rich data linked to each test item
+const testData = new WeakMap<vscode.TestItem, { testSuite: TestSuite }>();
+
+export const activate = async (
+  context: vscode.ExtensionContext
+): Promise<void> => {
+  const ctrl = vscode.tests.createTestController(
+    "venomTestController",
+    "Venom"
+  );
   context.subscriptions.push(ctrl);
 
-  const runHandler = (request: vscode.TestRunRequest, cancellation: vscode.CancellationToken) => {
-    const queue: { test: vscode.TestItem; data: TestCase }[] = [];
+  const runHandler = async (
+    request: vscode.TestRunRequest,
+    token: vscode.CancellationToken
+  ) => {
     const run = ctrl.createTestRun(request);
-    // map of file uris to statments on each line:
-    const coveredLines = new Map</* file uri */ string, (vscode.StatementCoverage | undefined)[]>();
 
-    const discoverTests = async (tests: Iterable<vscode.TestItem>) => {
-      for (const test of tests) {
-        if (request.exclude?.includes(test)) {
-          continue;
-        }
+    const queue: vscode.TestItem[] = [];
+    if (request.include) {
+      queue.push(...request.include);
+    } else {
+      ctrl.items.forEach((test) => queue.push(test));
+    }
 
-        const data = testData.get(test);
-        if (data instanceof TestCase) {
-          run.enqueued(test);
-          queue.push({ test, data });
-        } else {
-          if (data instanceof TestFile && !data.didResolve) {
-            await data.updateFromDisk(ctrl, test);
-          }
+    while (queue.length > 0 && !token.isCancellationRequested) {
+      const test = queue.pop()!;
 
-          await discoverTests(gatherTestItems(test.children));
-        }
-
-        if (test.uri && !coveredLines.has(test.uri.toString())) {
-          try {
-            const lines = (await getContentFromFilesystem(test.uri)).split('\n');
-            coveredLines.set(
-              test.uri.toString(),
-              lines.map((lineText, lineNo) =>
-                lineText.trim().length ? new vscode.StatementCoverage(0, new vscode.Position(lineNo, 0)) : undefined
-              )
-            );
-          } catch {
-            // ignored
-          }
-        }
-      }
-    };
-
-    const runTestQueue = async () => {
-      for (const { test, data } of queue) {
-        run.appendOutput(`Running ${test.id}\r\n`);
-        if (cancellation.isCancellationRequested) {
-          run.skipped(test);
-        } else {
-          run.started(test);
-          await data.run(test, run);
-        }
-
-        const lineNo = test.range!.start.line;
-        const fileCoverage = coveredLines.get(test.uri!.toString());
-        if (fileCoverage) {
-          fileCoverage[lineNo]!.executionCount++;
-        }
-
-        run.appendOutput(`Completed ${test.id}\r\n`);
+      if (request.exclude?.includes(test)) {
+        continue;
       }
 
-      run.end();
-    };
+      const start = Date.now();
+      try {
+        run.started(test);
+        const runResult = await venomRun(test.uri!.path);
 
-    run.coverageProvider = {
-      provideFileCoverage() {
-        const coverage: vscode.FileCoverage[] = [];
-        for (const [uri, statements] of coveredLines) {
-          coverage.push(
-            vscode.FileCoverage.fromDetails(
-              vscode.Uri.parse(uri),
-              statements.filter((s): s is vscode.StatementCoverage => !!s)
-            )
-          );
+        run.appendOutput(runResult.stdout, undefined, test);
+        run.appendOutput(runResult.stderr, undefined, test);
+
+        if (runResult.failures.length === 0) {
+          run.passed(test, Date.now() - start);
+        } else {
+          const messages = runResult.failures.map((message) => {
+            const parsedMessage = parseFailureMessage(message);
+            const testMessage =
+              parsedMessage.expected && parsedMessage.actual
+                ? vscode.TestMessage.diff(
+                    parsedMessage.raw,
+                    parsedMessage.expected,
+                    parsedMessage.actual
+                  )
+                : new vscode.TestMessage(parsedMessage.raw);
+
+            if (parsedMessage.line) {
+              // FIXME: compute the range length instead of defaulting to 1000
+              const range = new vscode.Range(
+                parsedMessage.line,
+                0,
+                parsedMessage.line,
+                1000
+              );
+              testMessage.location = new vscode.Location(test.uri!, range);
+            }
+            return testMessage;
+          });
+          run.failed(test, messages, Date.now() - start);
         }
+      } catch (e) {
+        const message =
+          e instanceof Error
+            ? e.message
+            : (console.warn(e), "Test failed for an unknown reason");
+        run.appendOutput(message, undefined, test);
+        run.errored(test, new vscode.TestMessage(message), Date.now() - start);
+      }
+    }
 
-        return coverage;
-      },
-    };
-
-    discoverTests(request.include ?? gatherTestItems(ctrl.items)).then(runTestQueue);
+    run.end();
   };
+
+  ctrl.createRunProfile("Run", vscode.TestRunProfileKind.Run, runHandler, true);
 
   ctrl.refreshHandler = async () => {
-    await Promise.all(getWorkspaceTestPatterns().map(({ pattern }) => findInitialFiles(ctrl, pattern)));
+    outputChannel.appendLine("refreshHandler called");
+    await Promise.all(
+      getWorkspaceTestPatterns().map(({ pattern }) =>
+        findInitialFiles(ctrl, pattern, true)
+      )
+    );
   };
 
-  ctrl.createRunProfile('Run Tests', vscode.TestRunProfileKind.Run, runHandler, true);
-
-  ctrl.resolveHandler = async item => {
-    if (!item) {
+  ctrl.resolveHandler = async (file) => {
+    if (!file) {
+      outputChannel.appendLine("resolveHandler called with empty file");
       context.subscriptions.push(...startWatchingWorkspace(ctrl));
       return;
     }
-
-    const data = testData.get(item);
-    if (data instanceof TestFile) {
-      await data.updateFromDisk(ctrl, item);
-    }
+    outputChannel.appendLine(
+      `resolveHandler called with file ${file.uri?.toString()}`
+    );
   };
 
-  function updateNodeForDocument(e: vscode.TextDocument) {
-    if (e.uri.scheme !== 'file') {
-      return;
+  const updateNodeForDocument = (e: vscode.TextDocument) => {
+    if (e.uri.scheme === "file" && e.uri.path.endsWith(".venom.yml")) {
+      getOrCreateFile(ctrl, e.uri, true);
     }
-    
-    if (!e.uri.path.endsWith('.md')) {
-      return;
-    }
-
-    const { file, data } = getOrCreateFile(ctrl, e.uri);
-    data.updateFromContents(ctrl, e.getText(), file);
-  }
+  };
 
   for (const document of vscode.workspace.textDocuments) {
     updateNodeForDocument(document);
@@ -123,64 +123,92 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(updateNodeForDocument),
-    vscode.workspace.onDidChangeTextDocument(e => updateNodeForDocument(e.document)),
+    vscode.workspace.onDidChangeTextDocument((e) =>
+      updateNodeForDocument(e.document)
+    )
   );
-}
+};
 
-function getOrCreateFile(controller: vscode.TestController, uri: vscode.Uri) {
-  const existing = controller.items.get(uri.toString());
-  if (existing) {
-    return { file: existing, data: testData.get(existing) as TestFile };
+const getOrCreateFile = async (
+  ctrl: vscode.TestController,
+  uri: vscode.Uri,
+  forceRefresh = false
+) => {
+  const id = uri.toString();
+
+  if (forceRefresh) {
+    ctrl.items.delete(id);
   }
 
-  const file = controller.createTestItem(uri.toString(), uri.path.split('/').pop()!, uri);
-  controller.items.add(file);
+  const existing = ctrl.items.get(id);
+  if (existing) {
+    return existing;
+  }
 
-  const data = new TestFile();
-  testData.set(file, data);
+  const rawTestSuite = await getContentFromFilesystem(uri);
+  const testSuite = yaml.load(rawTestSuite, {
+    filename: uri.fsPath,
+  }) as TestSuite;
 
-  file.canResolveChildren = true;
-  return { file, data };
-}
+  const file = ctrl.createTestItem(id, basename(uri.path), uri);
+  file.canResolveChildren = false;
+  file.description = testSuite.name;
+  ctrl.items.add(file);
 
-function gatherTestItems(collection: vscode.TestItemCollection) {
-  const items: vscode.TestItem[] = [];
-  collection.forEach(item => items.push(item));
-  return items;
-}
+  testData.set(file, { testSuite });
 
-function getWorkspaceTestPatterns() {
+  return file;
+};
+
+const getWorkspaceTestPatterns = () => {
   if (!vscode.workspace.workspaceFolders) {
     return [];
   }
 
-  return vscode.workspace.workspaceFolders.map(workspaceFolder => ({
+  return vscode.workspace.workspaceFolders.map((workspaceFolder) => ({
     workspaceFolder,
-    pattern: new vscode.RelativePattern(workspaceFolder, '**/*.md'),
+    pattern: new vscode.RelativePattern(workspaceFolder, "**/*.venom.yml"),
   }));
-}
+};
 
-async function findInitialFiles(controller: vscode.TestController, pattern: vscode.GlobPattern) {
+const findInitialFiles = async (
+  ctrl: vscode.TestController,
+  pattern: vscode.GlobPattern,
+  forceRefresh = false
+) => {
   for (const file of await vscode.workspace.findFiles(pattern)) {
-    getOrCreateFile(controller, file);
+    getOrCreateFile(ctrl, file, forceRefresh);
   }
-}
+};
 
-function startWatchingWorkspace(controller: vscode.TestController) {
-  return getWorkspaceTestPatterns().map(({ workspaceFolder, pattern }) => {
+const startWatchingWorkspace = (ctrl: vscode.TestController) =>
+  getWorkspaceTestPatterns().map(({ pattern }) => {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-    watcher.onDidCreate(uri => getOrCreateFile(controller, uri));
-    watcher.onDidChange(uri => {
-      const { file, data } = getOrCreateFile(controller, uri);
-      if (data.didResolve) {
-        data.updateFromDisk(controller, file);
-      }
+    watcher.onDidCreate((uri) => {
+      outputChannel.appendLine(`File created: ${uri.fsPath}`);
+      getOrCreateFile(ctrl, uri);
     });
-    watcher.onDidDelete(uri => controller.items.delete(uri.toString()));
+    watcher.onDidChange((uri) => {
+      outputChannel.appendLine(`File changed: ${uri.fsPath}`);
+      getOrCreateFile(ctrl, uri, true);
+    });
+    watcher.onDidDelete((uri) => {
+      outputChannel.appendLine(`File deleted: ${uri.fsPath}`);
+      ctrl.items.delete(uri.toString());
+    });
 
-    findInitialFiles(controller, pattern);
+    findInitialFiles(ctrl, pattern);
 
     return watcher;
   });
-}
+
+const getContentFromFilesystem = async (uri: vscode.Uri) => {
+  try {
+    const rawContent = await vscode.workspace.fs.readFile(uri);
+    return textDecoder.decode(rawContent);
+  } catch (e) {
+    outputChannel.appendLine(`Failed to read file ${uri.fsPath}: ${e}`);
+    return "";
+  }
+};

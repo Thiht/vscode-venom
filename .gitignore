@@ -2,6 +2,7 @@ out
 node_modules
 .vscode-test/
 *.vsix
+.vscode/settings.json
 
 /vscode.d.ts
 /vscode.proposed.*.d.ts

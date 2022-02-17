@@ -1,0 +1,16 @@
+root: true
+env:
+  node: true
+parser: "@typescript-eslint/parser"
+plugins:
+  - "@typescript-eslint"
+settings:
+  react:
+    version: detect
+extends:
+  - eslint:recommended
+  - plugin:@typescript-eslint/recommended
+  - prettier
+rules:
+  "@typescript-eslint/no-non-null-assertion": 0
+  "@typescript-eslint/explicit-module-boundary-types": 0

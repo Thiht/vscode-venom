@@ -1,46 +1,45 @@
 {
-	"name": "test-provider-sample",
-	"displayName": "test-provider-sample",
-	"description": "Sample showing how to use the test APIs",
-	"version": "0.0.1",
-	"publisher": "vscode-samples",
-	"private": true,
-	"license": "MIT",
-	"repository": "https://github.com/Microsoft/vscode-extension-samples",
-	"enabledApiProposals": [
-		"testCoverage",
-		"testRefresh"
-	],
-	"engines": {
-		"vscode": "^1.51.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"workspaceContains:*.md"
-	],
-	"main": "./out/extension.js",
-	"prettier": {
-		"printWidth": 120,
-		"singleQuote": true,
-		"arrowParens": "avoid"
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"lint": "eslint . --ext .ts,.tsx",
-		"watch": "tsc -watch -p ./",
-		"download-api": "vscode-dts dev",
-		"postdownload-api": "vscode-dts main",
-		"postinstall": "npm run download-api"
-	},
-	"devDependencies": {
-		"@types/node": "^12.12.0",
-		"@typescript-eslint/eslint-plugin": "^4.16.0",
-		"@typescript-eslint/parser": "^4.16.0",
-		"eslint": "^7.21.0",
-		"typescript": "^4.5.5",
-		"vscode-dts": "^0.3.3"
-	}
+  "name": "vscode-venom",
+  "displayName": "Venom Test Runner",
+  "description": "Venom integration with Visual Studio Code",
+  "version": "0.0.1",
+  "publisher": "Thibaut Rousseau",
+  "private": true,
+  "license": "MIT",
+  "repository": "https://github.com/Thiht/vscode-venom",
+  "enabledApiProposals": [],
+  "engines": {
+    "vscode": "^1.64.0"
+  },
+  "categories": [
+    "Testing"
+  ],
+  "activationEvents": [
+    "workspaceContains:*.venom.yml"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint . --ext .ts,.tsx",
+    "watch": "tsc -watch -p ./",
+    "download-api": "vscode-dts dev",
+    "postdownload-api": "vscode-dts main",
+    "postinstall": "npm run download-api",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "^14.16.0",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "eslint": "^8.9.0",
+    "eslint-config-prettier": "^8.3.0",
+    "prettier": "2.5.1",
+    "typescript": "^4.5.5",
+    "vscode-dts": "^0.3.3"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
 }

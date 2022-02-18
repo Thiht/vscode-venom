@@ -5,7 +5,7 @@ import { randomBytes } from "crypto";
 import { readFile, rmSync } from "fs";
 import { resolve } from "path";
 import { tmpdir } from "os";
-import stripAnsi from "strip-ansi";
+import stripAnsi from "./stripAnsi";
 
 const execPromise = promisify(exec);
 const readFilePromise = promisify(readFile);

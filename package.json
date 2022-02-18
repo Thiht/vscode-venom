@@ -3,7 +3,10 @@
   "displayName": "Venom Test Runner",
   "description": "Venom integration with Visual Studio Code",
   "version": "0.0.1",
-  "publisher": "Thibaut Rousseau",
+  "publisher": "thiht",
+  "author": {
+    "name": "Thibaut Rousseau"
+  },
   "private": true,
   "license": "MIT",
   "repository": "https://github.com/Thiht/vscode-venom",
@@ -15,7 +18,7 @@
     "Testing"
   ],
   "activationEvents": [
-    "workspaceContains:*.venom.yml"
+    "workspaceContains:**/*.venom.yml"
   ],
   "contributes": {
     "configuration": {

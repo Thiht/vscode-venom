@@ -48,8 +48,12 @@ export const activate = async (
         run.started(test);
         const runResult = await venomRun(test.uri!.path);
 
-        run.appendOutput(runResult.stdout, undefined, test);
-        run.appendOutput(runResult.stderr, undefined, test);
+        if (runResult.stdout) {
+          run.appendOutput(runResult.stdout);
+        }
+        if (runResult.stderr) {
+          run.appendOutput(runResult.stderr);
+        }
 
         if (runResult.failures.length === 0) {
           run.passed(test, Date.now() - start);
@@ -102,7 +106,7 @@ export const activate = async (
           e instanceof Error
             ? e.message
             : (console.warn(e), "Test failed for an unknown reason");
-        run.appendOutput(message, undefined, test);
+        run.appendOutput(message);
         run.errored(test, new vscode.TestMessage(message), Date.now() - start);
       }
     }

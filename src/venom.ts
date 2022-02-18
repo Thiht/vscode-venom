@@ -1,3 +1,4 @@
+import * as vscode from "vscode";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { randomBytes } from "crypto";
@@ -60,11 +61,22 @@ export const run = async (filepath: string) => {
   let stdout, stderr: string;
   try {
     // TODO: handle custom venom binary
-    // TODO: handle custom args
+
+    const additionalArgs = vscode.workspace
+      .getConfiguration("venom")
+      .get<string[]>("additionalRunArguments", []);
+
+    const args = [
+      "--format=json",
+      `--output-dir=${venomTmpDir}`,
+      ...additionalArgs,
+    ];
+
     ({ stdout, stderr } = await execPromise(
-      `IS_TTY=true /Users/thiht/workspace/go/bin/venom run --format=json --output-dir=${venomTmpDir} ${filepath}`
+      `IS_TTY=true venom run ${args.join(" ")} ${filepath}`
     ));
   } catch (e: unknown) {
+    console.warn(e);
     ({ stdout, stderr } = e as ExecException);
   }
 

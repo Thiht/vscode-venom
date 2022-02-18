@@ -17,6 +17,21 @@
   "activationEvents": [
     "workspaceContains:*.venom.yml"
   ],
+  "contributes": {
+    "configuration": {
+      "title": "Venom",
+      "properties": {
+        "venom.additionalRunArguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments to provide to the `venom run` command."
+        }
+      }
+    }
+  },
   "main": "./out/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -14,9 +14,7 @@ const testData = new WeakMap<
   { rawTestSuite: string; testSuite: TestSuite }
 >();
 
-export const activate = async (
-  context: vscode.ExtensionContext
-): Promise<void> => {
+export const activate = async (context: vscode.ExtensionContext) => {
   const ctrl = vscode.tests.createTestController(
     "venomTestController",
     "Venom"
@@ -47,6 +45,11 @@ export const activate = async (
       try {
         run.started(test);
         const runResult = await venomRun(test.uri!.path);
+        if (!runResult) {
+          outputChannel.appendLine("Venom binary not found, aborting");
+          run.end();
+          return;
+        }
 
         if (runResult.stdout) {
           run.appendOutput(runResult.stdout);
@@ -84,7 +87,7 @@ export const activate = async (
               const lineEnd =
                 rawTestSuiteLines.length >= parsedMessage.line
                   ? rawTestSuiteLines[parsedMessage.line - 1].length
-                  : (console.warn(
+                  : (outputChannel.appendLine(
                       `Line ${parsedMessage.line} doesn't exist in file ${test.uri?.path}`
                     ),
                     1000);
@@ -103,9 +106,7 @@ export const activate = async (
         }
       } catch (e) {
         const message =
-          e instanceof Error
-            ? e.message
-            : (console.warn(e), "Test failed for an unknown reason");
+          e instanceof Error ? e.message : "Test failed for an unknown reason";
         run.appendOutput(message);
         run.errored(test, new vscode.TestMessage(message), Date.now() - start);
       }

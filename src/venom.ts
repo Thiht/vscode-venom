@@ -6,6 +6,7 @@ import { readFile, rmSync } from "fs";
 import { resolve } from "path";
 import { tmpdir } from "os";
 import stripAnsi from "./stripAnsi";
+import * as which from "which";
 
 const execPromise = promisify(exec);
 const readFilePromise = promisify(readFile);
@@ -55,13 +56,31 @@ interface ExecException {
 }
 
 export const run = async (filepath: string) => {
+  const venomBinary = vscode.workspace
+    .getConfiguration("venom")
+    .get<string>("binaryLocation", "venom");
+
+  try {
+    await which(venomBinary);
+  } catch (e) {
+    const choice = await vscode.window.showErrorMessage(
+      "Venom binary not found. Install it in your PATH or configure its location manually.",
+      "Set Venom binary location"
+    );
+    if (choice === "Set Venom binary location") {
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        "venom.binaryLocation"
+      );
+    }
+    return null;
+  }
+
   const token = await randomBytesPromise(10);
   const venomTmpDir = resolve(tmpdir(), `venom-${token.toString("hex")}`);
 
   let stdout, stderr: string;
   try {
-    // TODO: handle custom venom binary
-
     const additionalArgs = vscode.workspace
       .getConfiguration("venom")
       .get<string[]>("additionalRunArguments", []);
@@ -73,10 +92,9 @@ export const run = async (filepath: string) => {
     ];
 
     ({ stdout, stderr } = await execPromise(
-      `IS_TTY=true venom run ${args.join(" ")} ${filepath}`
+      `IS_TTY=true ${venomBinary} run ${args.join(" ")} ${filepath}`
     ));
-  } catch (e: unknown) {
-    console.warn(e);
+  } catch (e) {
     ({ stdout, stderr } = e as ExecException);
   }
 

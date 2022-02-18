@@ -9,7 +9,10 @@ const textDecoder = new TextDecoder("utf-8");
 // Used to log output of the Venom extension
 const outputChannel = vscode.window.createOutputChannel("Venom");
 // Rich data linked to each test item
-const testData = new WeakMap<vscode.TestItem, { testSuite: TestSuite }>();
+const testData = new WeakMap<
+  vscode.TestItem,
+  { rawTestSuite: string; testSuite: TestSuite }
+>();
 
 export const activate = async (
   context: vscode.ExtensionContext
@@ -63,12 +66,30 @@ export const activate = async (
                 : new vscode.TestMessage(parsedMessage.raw);
 
             if (parsedMessage.line) {
-              // FIXME: compute the range length instead of defaulting to 1000
+              const { rawTestSuite } = testData.get(test)!;
+              const rawTestSuiteLines = rawTestSuite.split("\n");
+
+              // Ignore the prefix spaces from the line to get a more beautiful visual
+              const lineStart =
+                rawTestSuiteLines.length >= parsedMessage.line
+                  ? rawTestSuiteLines[parsedMessage.line - 1].length -
+                    rawTestSuiteLines[parsedMessage.line - 1].trimLeft().length
+                  : 0;
+
+              // Get the line length
+              const lineEnd =
+                rawTestSuiteLines.length >= parsedMessage.line
+                  ? rawTestSuiteLines[parsedMessage.line - 1].length
+                  : (console.warn(
+                      `Line ${parsedMessage.line} doesn't exist in file ${test.uri?.path}`
+                    ),
+                    1000);
+
               const range = new vscode.Range(
-                parsedMessage.line,
-                0,
-                parsedMessage.line,
-                1000
+                parsedMessage.line - 1,
+                lineStart,
+                parsedMessage.line - 1,
+                lineEnd
               );
               testMessage.location = new vscode.Location(test.uri!, range);
             }
@@ -155,7 +176,7 @@ const getOrCreateFile = async (
   file.description = testSuite.name;
   ctrl.items.add(file);
 
-  testData.set(file, { testSuite });
+  testData.set(file, { rawTestSuite, testSuite });
 
   return file;
 };

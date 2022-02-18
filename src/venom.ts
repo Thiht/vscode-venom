@@ -98,7 +98,7 @@ export const parseFailureMessage = (message: string) => {
   message = stripAnsi(message).trim();
 
   const re1 =
-    /expected:\s+(?<expected>.*?)\s+got:\s+(?<actual>.*?)\s+\(.*:(?<line>\d+)\)/;
+    /expected:\s+(?<expected>.*?)\s+got:\s+(?<actual>.*?)\s+\(.*:(?<line>\d+)\)$/;
   const match1 = re1.exec(message);
   if (match1?.groups) {
     return {
@@ -109,7 +109,7 @@ export const parseFailureMessage = (message: string) => {
     };
   }
 
-  const re2 = /\s+\(.*:(?<line>\d+)\)/;
+  const re2 = /\s+\(.*:(?<line>\d+)\)$/;
   const match2 = re2.exec(message);
   if (match2?.groups) {
     return {

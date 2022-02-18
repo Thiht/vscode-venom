@@ -65,14 +65,24 @@ export const run = async (filepath: string) => {
   } catch (e) {
     const choice = await vscode.window.showErrorMessage(
       "Venom binary not found. Install it in your PATH or configure its location manually.",
+      "Install Venom",
       "Set Venom binary location"
     );
-    if (choice === "Set Venom binary location") {
-      vscode.commands.executeCommand(
-        "workbench.action.openSettings",
-        "venom.binaryLocation"
-      );
+
+    switch (choice) {
+      case "Install Venom":
+        vscode.env.openExternal(
+          vscode.Uri.parse("https://github.com/ovh/venom#installing")
+        );
+        break;
+      case "Set Venom binary location":
+        vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "venom.binaryLocation"
+        );
+        break;
     }
+
     return null;
   }
 

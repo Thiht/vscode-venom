@@ -1,8 +1,9 @@
-out
-node_modules
+.eslintcache
 .vscode-test/
-*.vsix
 .vscode/settings.json
+*.vsix
+node_modules/
+out/
 
 /vscode.d.ts
 /vscode.proposed.*.d.ts

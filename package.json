@@ -21,12 +21,13 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint . --ext .ts",
     "watch": "tsc -watch -p ./",
     "download-api": "vscode-dts dev",
     "postdownload-api": "vscode-dts main",
     "postinstall": "npm run download-api",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.5",
@@ -35,11 +36,17 @@
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
     "eslint-config-prettier": "^8.3.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
     "prettier": "2.5.1",
     "typescript": "^4.5.5",
     "vscode-dts": "^0.3.3"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
+  },
+  "lint-staged": {
+    "*.{ts}": "eslint --cache --fix",
+    "*.{ts,json,yml}": "prettier --write"
   }
 }

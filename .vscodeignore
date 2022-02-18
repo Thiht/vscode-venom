@@ -1,0 +1,9 @@
+*
+*/**
+
+!node_modules/
+!out/*
+!LICENSE
+!package.json
+!README.md
+!vscode-venom.png

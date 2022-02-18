@@ -1,6 +1,6 @@
 {
   "name": "vscode-venom",
-  "displayName": "Venom Test Runner",
+  "displayName": "Venom",
   "description": "Venom integration with Visual Studio Code",
   "version": "0.0.1",
   "publisher": "thiht",
@@ -9,7 +9,14 @@
   },
   "private": true,
   "license": "MIT",
-  "repository": "https://github.com/Thiht/vscode-venom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Thiht/vscode-venom"
+  },
+  "bugs": {
+    "url": "https://github.com/Thiht/vscode-venom/issues"
+  },
+  "icon": "vscode-venom.png",
   "enabledApiProposals": [],
   "engines": {
     "vscode": "^1.64.0"

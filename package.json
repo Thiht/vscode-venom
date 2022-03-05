@@ -27,7 +27,16 @@
   "activationEvents": [
     "workspaceContains:**/*.venom.yml"
   ],
+  "extensionDependencies": [
+    "redhat.vscode-yaml"
+  ],
   "contributes": {
+    "yamlValidation": [
+      {
+        "fileMatch": "/**/*.venom.yml",
+        "url": "./schema.json"
+      }
+    ],
     "configuration": {
       "title": "Venom",
       "properties": {

@@ -1,0 +1,509 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Venom",
+  "description": "Venom is a declarative integration testing framework",
+  "type": "object",
+  "$ref": "#/definitions/test_suite",
+  "definitions": {
+    "test_suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "vars": { "type": "object" },
+        "testcases": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/test_case" }
+        }
+      }
+    },
+    "test_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "skip": { "$ref": "#/definitions/assertions" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step" }
+        }
+      }
+    },
+    "step": {
+      "oneOf": [
+        { "$ref": "#/definitions/step_exec" },
+        { "$ref": "#/definitions/step_dbfixtures" },
+        { "$ref": "#/definitions/step_http" },
+        { "$ref": "#/definitions/step_imap" },
+        { "$ref": "#/definitions/step_kafka" },
+        { "$ref": "#/definitions/step_readfile" },
+        { "$ref": "#/definitions/step_redis" },
+        { "$ref": "#/definitions/step_smtp" },
+        { "$ref": "#/definitions/step_sql" },
+        { "$ref": "#/definitions/step_ssh" },
+        { "$ref": "#/definitions/step_web" }
+      ]
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "or": { "$ref": "#/definitions/assertions" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "and": { "$ref": "#/definitions/assertions" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "xor": { "$ref": "#/definitions/assertions" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "not": { "$ref": "#/definitions/assertions" }
+            }
+          }
+        ]
+      }
+    },
+    "step_base": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          ]
+        },
+        "assertions": { "$ref": "#/definitions/assertions" },
+        "vars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "from": { "type": "string" },
+              "regex": { "type": "string" }
+            }
+          }
+        },
+        "retry": { "type": "number" },
+        "retry_if": { "$ref": "#/definitions/assertions" },
+        "delay": { "type": "number" },
+        "timeout": { "type": "number" },
+        "range": true
+      }
+    },
+    "step_dbfixtures": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "database", "dsn"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "dbfixtures"
+        },
+        "database": {
+          "type": "string",
+          "enum": ["mysql", "postgres"]
+        },
+        "dsn": { "type": "string" },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "folder": { "type": "string" },
+        "schemas": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "migrations": { "type": "string" },
+        "migrationsTable": { "type": "string" },
+        "skipResetSequences": { "type": "boolean" }
+      }
+    },
+    "step_exec": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "exec"
+        },
+        "script": { "type": "string" }
+      }
+    },
+    "step_http": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "http"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "HEAD",
+            "OPTIONS",
+            "CONNECT",
+            "TRACE"
+          ]
+        },
+        "url": { "type": "string" },
+        "path": { "type": "string" },
+        "body": { "type": "string" },
+        "bodyFile": { "type": "string" },
+        "multipart_form": { "type": "object" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "ignore_verify_ssl": { "type": "boolean" },
+        "basic_auth_user": { "type": "string" },
+        "basic_auth_password": { "type": "string" },
+        "skip_headers": { "type": "boolean" },
+        "skip_body": { "type": "boolean" },
+        "proxy": { "type": "string" },
+        "resolve": {
+          "description": "List of custom resolvers (example: example.com:443:127.0.0.1)",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "no_follow_redirect": { "type": "boolean" },
+        "unix_sock": { "type": "string" },
+        "tls_client_cert": { "type": "string" },
+        "tls_client_key": { "type": "string" },
+        "tls_root_ca": { "type": "string" }
+      }
+    },
+    "step_imap": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "imaphost"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "imap"
+        },
+        "imaphost": { "type": "string" },
+        "imapport": { "type": "string" },
+        "imapuser": { "type": "string" },
+        "imappassword": { "type": "string" },
+        "mbox": { "type": "string" },
+        "mboxonsuccess": { "type": "string" },
+        "deleteonsuccess": { "type": "boolean" },
+        "searchfrom": { "type": "string" },
+        "searchto": { "type": "string" },
+        "searchsubject": { "type": "string" },
+        "searchbody": { "type": "string" }
+      }
+    },
+    "step_kafka": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "addrs", "clientType"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "kafka"
+        },
+        "addrs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "withTLS": { "type": "boolean" },
+        "withSASL": { "type": "boolean" },
+        "withSASLHandshaked": { "type": "boolean" },
+        "withAVRO": { "type": "boolean" },
+        "schemaRegistryAddr": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "kafka_version": {
+          "type": "string",
+          "default": "0.10.2.0"
+        },
+        "clientType": {
+          "type": "string",
+          "enum": ["producer", "consumer"]
+        }
+      },
+      "if": {
+        "properties": { "clientType": { "const": "consumer" } },
+        "required": ["clientType"]
+      },
+      "then": {
+        "required": ["groupID", "topics"],
+        "properties": {
+          "groupID": { "type": "string" },
+          "topics": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "timeout": { "type": "number" },
+          "messageLimit": { "type": "number" },
+          "initialOffset": {
+            "type": "string",
+            "enum": ["newest", "oldest"],
+            "default": "newest"
+          },
+          "markOffset": { "type": "boolean" },
+          "waitFor": { "type": "number" },
+          "keyFilter": { "type": "string" }
+        }
+      },
+      "else": {
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": { "type": "string" },
+                "topic": { "type": "string" },
+                "value": { "type": "string" },
+                "valueFile": { "type": "string" },
+                "avroSchemaFile": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "step_readfile": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "readfile"
+        },
+        "path": { "type": "string" }
+      }
+    },
+    "step_redis": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "redis"
+        },
+        "dialURL": { "type": "string" },
+        "path": { "type": "string" },
+        "commands": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "step_smtp": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "host", "port", "to", "from"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "smtp"
+        },
+        "host": { "type": "string" },
+        "port": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "to": { "type": "string" },
+        "from": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "withtls": { "type": "boolean" }
+      }
+    },
+    "step_sql": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "driver", "dsn"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "sql"
+        },
+        "driver": {
+          "type": "string",
+          "enum": ["mysql", "postgres", "oracle"]
+        },
+        "dsn": { "type": "string" },
+        "commands": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "file": { "type": "string" }
+      }
+    },
+    "step_ssh": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "host", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "ssh"
+        },
+        "host": { "type": "string" },
+        "command": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "privatekey": { "type": "string" }
+      }
+    },
+    "step_web": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "web"
+        },
+        "action": { "type": "object" },
+        "screenshot": { "type": "string" }
+      }
+    }
+  }
+}

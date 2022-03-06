@@ -34,7 +34,14 @@
     "yamlValidation": [
       {
         "fileMatch": "/**/*.venom.yml",
-        "url": "./schema.json"
+        "url": "./schema/venom.schema.json"
+      }
+    ],
+    "commands": [
+      {
+        "category": "Venom",
+        "title": "Convert JSON to Venom assertions",
+        "command": "venom.jsonToAssertions"
       }
     ],
     "configuration": {

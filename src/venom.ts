@@ -55,7 +55,7 @@ interface ExecException {
   stderr: string;
 }
 
-export const run = async (filepath: string) => {
+const findVenom = async () => {
   const venomBinary = vscode.workspace
     .getConfiguration("venom")
     .get<string>("binaryLocation", "venom");
@@ -83,6 +83,31 @@ export const run = async (filepath: string) => {
         break;
     }
 
+    return null;
+  }
+
+  return venomBinary;
+};
+
+export const version = async () => {
+  const venomBinary = findVenom();
+  if (!venomBinary) {
+    return null;
+  }
+
+  let stdout, stderr: string;
+  try {
+    ({ stdout, stderr } = await execPromise(`${venomBinary} version`));
+  } catch (e) {
+    ({ stdout, stderr } = e as ExecException);
+  }
+
+  return { stdout, stderr };
+};
+
+export const run = async (filepath: string) => {
+  const venomBinary = findVenom();
+  if (!venomBinary) {
     return null;
   }
 

@@ -8,6 +8,7 @@
 
 - Integration with Visual Studio Code's Testing workbench
 - JSON/YAML schema for validating the test suites
+- Generate assertions from JSON
 
 ## Caveats
 

@@ -3,6 +3,7 @@ import { TextDecoder } from "util";
 import { basename } from "path";
 import * as yaml from "js-yaml";
 import { parseFailureMessage, run as venomRun, TestSuite } from "./venom";
+import { convertDocument } from "./commands";
 
 // Used to read files from disk
 const textDecoder = new TextDecoder("utf-8");
@@ -15,6 +16,10 @@ const testData = new WeakMap<
 >();
 
 export const activate = async (context: vscode.ExtensionContext) => {
+  context.subscriptions.push(
+    vscode.commands.registerCommand("venom.jsonToAssertions", convertDocument)
+  );
+
   const ctrl = vscode.tests.createTestController(
     "venomTestController",
     "Venom"

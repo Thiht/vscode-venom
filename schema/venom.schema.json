@@ -189,7 +189,9 @@
         "range": true,
         "type": {
           "type": "string",
-          "const": "http"
+          "const": "http",
+          "title": "Step HTTP",
+          "description": "Result:\n- result.statuscode: HTTP status code of the response\n- result.body: raw response body\n- result.bodyjson: response body parsed as JSON. Example: `result.bodyjson.items.items0.id`\n- result.headers: response headers\n"
         },
         "method": {
           "type": "string",

@@ -3,6 +3,7 @@
 
 !node_modules/
 !out/*
+!schema/
 !LICENSE
 !package.json
 !README.md

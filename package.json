@@ -17,7 +17,6 @@
     "url": "https://github.com/Thiht/vscode-venom/issues"
   },
   "icon": "vscode-venom.png",
-  "enabledApiProposals": [],
   "engines": {
     "vscode": "^1.64.0"
   },

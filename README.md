@@ -7,8 +7,13 @@
 ## Features
 
 - Integration with Visual Studio Code's Testing workbench
-- JSON/YAML schema for validating the test suites
+- JSON/YAML schema for autocompleting and validating the test suites
+
+![Screencast showing off Venom test suites autocomplete and validation](./docs/json-schema.gif)
+
 - Generate assertions from JSON
+
+![Screencast showing off Venom assertions generation from a JSON](./docs/generate-assertions.gif)
 
 ## Caveats
 

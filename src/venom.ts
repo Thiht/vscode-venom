@@ -89,8 +89,23 @@ const findVenom = async () => {
   return venomBinary;
 };
 
+const checkVenomVersion = async () => {
+  const versionResult = await version();
+  if (!versionResult || versionResult.stdout.includes("v0")) {
+    if (versionResult?.venomBinary) {
+      const version = versionResult.stdout.split(": ")[1];
+      vscode.window.showErrorMessage("Expected Venom binary version ≥ 1.0.0", {
+        modal: true,
+        detail: `${versionResult.venomBinary} has version ${version}`,
+      });
+    }
+    return false;
+  }
+  return true;
+};
+
 export const version = async () => {
-  const venomBinary = findVenom();
+  const venomBinary = await findVenom();
   if (!venomBinary) {
     return null;
   }
@@ -102,12 +117,16 @@ export const version = async () => {
     ({ stdout, stderr } = e as ExecException);
   }
 
-  return { stdout, stderr };
+  return { stdout, stderr, venomBinary };
 };
 
 export const run = async (filepath: string) => {
-  const venomBinary = findVenom();
+  const venomBinary = await findVenom();
   if (!venomBinary) {
+    return null;
+  }
+
+  if (!checkVenomVersion()) {
     return null;
   }
 

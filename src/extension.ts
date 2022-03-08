@@ -49,18 +49,30 @@ export const activate = async (context: vscode.ExtensionContext) => {
       const start = Date.now();
       try {
         run.started(test);
-        const runResult = await venomRun(test.uri!.path);
+
+        const workspace = vscode.workspace.getWorkspaceFolder(test.uri!);
+        const cwd = workspace!.uri.fsPath;
+
+        const runResult = await venomRun(test.uri!.fsPath, cwd);
         if (!runResult) {
           outputChannel.appendLine("Venom binary not found, aborting");
           run.end();
           return;
         }
 
+        run.appendOutput(`Working directory: ${cwd}\r\n`);
+        if (runResult.command) {
+          run.appendOutput(`Executing command: ${runResult.command}\r\n`);
+        }
         if (runResult.stdout) {
-          run.appendOutput(runResult.stdout);
+          run.appendOutput(
+            runResult.stdout.replace(/(?<!\r)\n/g, "\r\n") + "\r\n"
+          );
         }
         if (runResult.stderr) {
-          run.appendOutput(runResult.stderr);
+          run.appendOutput(
+            runResult.stderr.replace(/(?<!\r)\n/g, "\r\n") + "\r\n"
+          );
         }
 
         if (runResult.failures.length === 0) {
@@ -93,7 +105,7 @@ export const activate = async (context: vscode.ExtensionContext) => {
                 rawTestSuiteLines.length >= parsedMessage.line
                   ? rawTestSuiteLines[parsedMessage.line - 1].length
                   : (outputChannel.appendLine(
-                      `Line ${parsedMessage.line} doesn't exist in file ${test.uri?.path}`
+                      `Line ${parsedMessage.line} doesn't exist in file ${test.uri?.fsPath}`
                     ),
                     1000);
 
@@ -112,7 +124,7 @@ export const activate = async (context: vscode.ExtensionContext) => {
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Test failed for an unknown reason";
-        run.appendOutput(message);
+        run.appendOutput(message + "\n");
         run.errored(test, new vscode.TestMessage(message), Date.now() - start);
       }
     }
@@ -143,7 +155,7 @@ export const activate = async (context: vscode.ExtensionContext) => {
   };
 
   const updateNodeForDocument = (e: vscode.TextDocument) => {
-    if (e.uri.scheme === "file" && e.uri.path.endsWith(".venom.yml")) {
+    if (e.uri.scheme === "file" && e.uri.fsPath.endsWith(".venom.yml")) {
       getOrCreateFile(ctrl, e.uri, true);
     }
   };
@@ -181,7 +193,7 @@ const getOrCreateFile = async (
     filename: uri.fsPath,
   }) as TestSuite;
 
-  const file = ctrl.createTestItem(id, basename(uri.path), uri);
+  const file = ctrl.createTestItem(id, basename(uri.fsPath), uri);
   file.canResolveChildren = false;
   file.description = testSuite.name;
   ctrl.items.add(file);

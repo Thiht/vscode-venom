@@ -120,7 +120,7 @@ export const version = async () => {
   return { stdout, stderr, venomBinary };
 };
 
-export const run = async (filepath: string) => {
+export const run = async (filepath: string, cwd: string) => {
   const venomBinary = await findVenom();
   if (!venomBinary) {
     return null;
@@ -133,7 +133,7 @@ export const run = async (filepath: string) => {
   const token = await randomBytesPromise(10);
   const venomTmpDir = resolve(tmpdir(), `venom-${token.toString("hex")}`);
 
-  let stdout, stderr: string;
+  let command, stdout, stderr: string;
   try {
     const additionalArgs = vscode.workspace
       .getConfiguration("venom")
@@ -143,11 +143,11 @@ export const run = async (filepath: string) => {
       "--format=json",
       `--output-dir=${venomTmpDir}`,
       ...additionalArgs,
-    ];
+    ].join(" ");
 
-    ({ stdout, stderr } = await execPromise(
-      `IS_TTY=true ${venomBinary} run ${args.join(" ")} ${filepath}`
-    ));
+    command = `IS_TTY=true ${venomBinary} run ${args} ${filepath}`;
+
+    ({ stdout, stderr } = await execPromise(command, { cwd }));
   } catch (e) {
     ({ stdout, stderr } = e as ExecException);
   }
@@ -172,6 +172,8 @@ export const run = async (filepath: string) => {
   // TODO: handle test suite errors (not the same as failures)
 
   return {
+    command,
+    cwd: process.cwd(),
     stdout,
     stderr,
     failures,

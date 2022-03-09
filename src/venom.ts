@@ -40,6 +40,7 @@ interface TestResultTestSuite {
 interface TestResultTestCase {
   name: string;
   classname: string;
+  errors: TestResultFailure[];
   failures: TestResultFailure[];
 }
 
@@ -158,6 +159,17 @@ export const run = async (filepath: string, cwd: string) => {
   rmSync(venomTmpDir, { recursive: true, force: true });
   const testResults = JSON.parse(rawTestResults.toString()) as TestResult;
 
+  const errors = testResults.test_suites
+    .filter(
+      (testSuite) =>
+        filepath.endsWith(testSuite.package) && testSuite.errors > 0
+    )
+    .flatMap((failedTestSuite) =>
+      failedTestSuite.testcases.filter((testCase) => testCase.errors !== null)
+    )
+    .flatMap((testCase) => testCase.errors)
+    .map((error) => error.value);
+
   const failures = testResults.test_suites
     .filter(
       (testSuite) =>
@@ -169,13 +181,12 @@ export const run = async (filepath: string, cwd: string) => {
     .flatMap((testCase) => testCase.failures)
     .map((failure) => failure.value);
 
-  // TODO: handle test suite errors (not the same as failures)
-
   return {
     command,
     cwd: process.cwd(),
     stdout,
     stderr,
+    errors,
     failures,
   };
 };

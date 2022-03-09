@@ -75,10 +75,10 @@ export const activate = async (context: vscode.ExtensionContext) => {
           );
         }
 
-        if (runResult.failures.length === 0) {
+        if (runResult.errors.length === 0 && runResult.failures.length === 0) {
           run.passed(test, Date.now() - start);
         } else {
-          const messages = runResult.failures.map((message) => {
+          const failureMessages = runResult.failures.map((message) => {
             const parsedMessage = parseFailureMessage(message);
             const testMessage =
               parsedMessage.expected && parsedMessage.actual
@@ -119,7 +119,19 @@ export const activate = async (context: vscode.ExtensionContext) => {
             }
             return testMessage;
           });
-          run.failed(test, messages, Date.now() - start);
+          const errorMessages = runResult.errors.map(
+            (message) => new vscode.TestMessage(message)
+          );
+
+          if (failureMessages.length === 0) {
+            run.errored(test, errorMessages, Date.now() - start);
+          } else {
+            run.failed(
+              test,
+              failureMessages.concat(errorMessages),
+              Date.now() - start
+            );
+          }
         }
       } catch (e) {
         const message =

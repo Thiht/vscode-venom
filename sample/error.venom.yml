@@ -1,0 +1,8 @@
+name: Sample Venom test suite
+testcases:
+  - name: "Sample test case #1"
+    steps:
+      - type: exec
+        script: echo "Hello"
+        assertions:
+          key: value

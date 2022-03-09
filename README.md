@@ -1,5 +1,8 @@
 # vscode-venom
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/thiht.vscode-venom?color=0078d7&label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=thiht.vscode-venom)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/thiht/vscode-venom?color=%23c160ef&label=Open%20VSX)](https://open-vsx.org/extension/thiht/vscode-venom)
+
 [Venom](https://github.com/ovh/venom) integration with Visual Studio Code.
 
 ![Screenshot showing Venom integration with the Testing workbench](https://raw.githubusercontent.com/Thiht/vscode-venom/master/docs/screenshot.png)

@@ -5,15 +5,17 @@
 
 [Venom](https://github.com/ovh/venom) integration with Visual Studio Code.
 
-![Screenshot showing Venom integration with the Testing workbench](https://raw.githubusercontent.com/Thiht/vscode-venom/master/docs/screenshot.png)
-
 ## Features
 
 - Integration with Visual Studio Code's Testing workbench
+
+![Screenshot showing Venom integration with the Testing workbench](./docs/testing-workbench.png)
+
 - JSON/YAML schema for autocompleting and validating the test suites
 
 ![Screencast showing off Venom test suites autocomplete and validation](./docs/json-schema.gif)
 
+- JSON/YAML schema for autocompleting and validating the [`.venomrc`](https://github.com/ovh/venom#use-a-configuration-file) configuration file
 - Generate assertions from JSON
 
 ![Screencast showing off Venom assertions generation from a JSON](./docs/generate-assertions.gif)

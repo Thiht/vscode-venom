@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Venom",
+  "title": "Venom Test Suite",
   "description": "Venom is a declarative integration testing framework",
   "type": "object",
   "$ref": "#/definitions/test_suite",

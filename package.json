@@ -30,10 +30,22 @@
     "redhat.vscode-yaml"
   ],
   "contributes": {
+    "languages": [
+      {
+        "id": "yaml",
+        "filenames": [
+          ".venomrc"
+        ]
+      }
+    ],
     "yamlValidation": [
       {
         "fileMatch": "/**/*.venom.yml",
         "url": "./schema/venom.schema.json"
+      },
+      {
+        "fileMatch": "/.venomrc",
+        "url": "./schema/venomrc.schema.json"
       }
     ],
     "commands": [
@@ -57,7 +69,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Additional arguments to provide to the `venom run` command."
+          "description": "Additional arguments to provide to the `venom run` command. Use a .venomrc file instead if possible."
         }
       }
     }

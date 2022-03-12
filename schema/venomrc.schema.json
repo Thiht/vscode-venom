@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".venomrc",
+  "description": ".venomrc is the configuration file format for Venom",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": ["yaml", "json", "xml", "tap"],
+      "default": "xml"
+    },
+    "lib_dir": {
+      "type": "string"
+    },
+    "output_dir": {
+      "type": "string",
+      "description": "Create test results file inside this directory"
+    },
+    "stop_on_failure": {
+      "type": "boolean",
+      "description": "Stop running test suite on first test case failure"
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "variables_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verbosity": {
+      "type": "number"
+    }
+  }
+}

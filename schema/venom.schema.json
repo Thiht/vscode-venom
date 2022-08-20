@@ -37,7 +37,8 @@
         { "$ref": "#/definitions/step_dbfixtures" },
         { "$ref": "#/definitions/step_http" },
         { "$ref": "#/definitions/step_imap" },
-        { "$ref": "#/definitions/step_kafka" },
+        { "$ref": "#/definitions/step_kafka_consumer" },
+        { "$ref": "#/definitions/step_kafka_producer" },
         { "$ref": "#/definitions/step_readfile" },
         { "$ref": "#/definitions/step_redis" },
         { "$ref": "#/definitions/step_smtp" },
@@ -266,7 +267,61 @@
         "searchbody": { "type": "string" }
       }
     },
-    "step_kafka": {
+    "step_kafka_consumer": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "addrs", "clientType", "groupID", "topics"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "kafka"
+        },
+        "clientType": {
+          "type": "string",
+          "const": "consumer"
+        },
+        "addrs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "withTLS": { "type": "boolean" },
+        "withSASL": { "type": "boolean" },
+        "withSASLHandshaked": { "type": "boolean" },
+        "withAVRO": { "type": "boolean" },
+        "schemaRegistryAddr": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "kafka_version": {
+          "type": "string",
+          "default": "0.10.2.0"
+        },
+        "groupID": { "type": "string" },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "messageLimit": { "type": "number" },
+        "initialOffset": {
+          "type": "string",
+          "enum": ["newest", "oldest"],
+          "default": "newest"
+        },
+        "markOffset": { "type": "boolean" },
+        "waitFor": { "type": "number" },
+        "keyFilter": { "type": "string" }
+      }
+    },
+    "step_kafka_producer": {
       "type": "object",
       "allOf": [{ "$ref": "#/definitions/step_base" }],
       "required": ["type", "addrs", "clientType"],
@@ -285,6 +340,10 @@
           "type": "string",
           "const": "kafka"
         },
+        "clientType": {
+          "type": "string",
+          "const": "producer"
+        },
         "addrs": {
           "type": "array",
           "items": { "type": "string" }
@@ -300,49 +359,17 @@
           "type": "string",
           "default": "0.10.2.0"
         },
-        "clientType": {
-          "type": "string",
-          "enum": ["producer", "consumer"]
-        }
-      },
-      "if": {
-        "properties": { "clientType": { "const": "consumer" } },
-        "required": ["clientType"]
-      },
-      "then": {
-        "required": ["groupID", "topics"],
-        "properties": {
-          "groupID": { "type": "string" },
-          "topics": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "timeout": { "type": "number" },
-          "messageLimit": { "type": "number" },
-          "initialOffset": {
-            "type": "string",
-            "enum": ["newest", "oldest"],
-            "default": "newest"
-          },
-          "markOffset": { "type": "boolean" },
-          "waitFor": { "type": "number" },
-          "keyFilter": { "type": "string" }
-        }
-      },
-      "else": {
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "key": { "type": "string" },
-                "topic": { "type": "string" },
-                "value": { "type": "string" },
-                "valueFile": { "type": "string" },
-                "avroSchemaFile": { "type": "string" }
-              }
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": { "type": "string" },
+              "topic": { "type": "string" },
+              "value": { "type": "string" },
+              "valueFile": { "type": "string" },
+              "avroSchemaFile": { "type": "string" }
             }
           }
         }
@@ -481,7 +508,9 @@
         "command": { "type": "string" },
         "user": { "type": "string" },
         "password": { "type": "string" },
-        "privatekey": { "type": "string" }
+        "privatekey": { "type": "string" },
+        "sudo": { "type": "string" },
+        "sudopassword": { "type": "string" }
       }
     },
     "step_web": {

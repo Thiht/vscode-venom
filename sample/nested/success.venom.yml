@@ -1,0 +1,11 @@
+name: Another Venom test suite
+testcases:
+  - name: "Sample test case #1"
+    steps:
+      - type: exec
+        script: echo "Hello from test case 1"
+
+  - name: "Sample test case #2"
+    steps:
+      - type: exec
+        script: echo "Hello"

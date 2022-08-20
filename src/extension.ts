@@ -34,9 +34,15 @@ export const activate = async (context: vscode.ExtensionContext) => {
 
     const queue: vscode.TestItem[] = [];
     if (request.include) {
-      queue.push(...request.include);
+      request.include.forEach((test) => {
+        if (test.children.size === 0) {
+          queue.push(test);
+        } else {
+          queue.push(...listTestItems(test.children));
+        }
+      });
     } else {
-      ctrl.items.forEach((test) => queue.push(test));
+      queue.push(...listTestItems(ctrl.items));
     }
 
     while (queue.length > 0 && !token.isCancellationRequested) {
@@ -184,6 +190,41 @@ export const activate = async (context: vscode.ExtensionContext) => {
   );
 };
 
+const listTestItems = (
+  parent: vscode.TestItemCollection
+): vscode.TestItem[] => {
+  const list: vscode.TestItem[] = [];
+  parent.forEach((test) => {
+    if (test.children.size === 0) {
+      list.push(test);
+    } else {
+      list.push(...listTestItems(test.children));
+    }
+  });
+  return list;
+};
+
+const createTree = (
+  ctrl: vscode.TestController,
+  parent: vscode.TestItemCollection,
+  items: string[]
+): vscode.TestItemCollection => {
+  const [head, ...tail] = items;
+
+  let headItem = parent.get(head);
+  if (!headItem) {
+    headItem = ctrl.createTestItem(head, head.split("/").pop()!);
+    parent.add(headItem);
+  }
+  parent = headItem.children;
+
+  if (tail.length === 0) {
+    return parent;
+  }
+  tail[0] = head + "/" + tail[0];
+  return createTree(ctrl, parent, tail);
+};
+
 const getOrCreateFile = async (
   ctrl: vscode.TestController,
   uri: vscode.Uri,
@@ -191,11 +232,34 @@ const getOrCreateFile = async (
 ) => {
   const id = uri.toString();
 
-  if (forceRefresh) {
-    ctrl.items.delete(id);
+  let parent = ctrl.items;
+  if (vscode.workspace.workspaceFolders) {
+    // List currently opened workspace folders
+    const workspaceFolders = vscode.workspace.workspaceFolders
+      .map((folder) => folder.uri.fsPath)
+      .sort((a, b) => b.length - a.length);
+
+    // Find workspace folder of the current test file
+    const workspaceFolder = workspaceFolders.find((workspaceFolder) =>
+      uri.fsPath.startsWith(workspaceFolder)
+    );
+    if (workspaceFolder) {
+      // If we find it, we'll create the tree from the workspace folder name to the test file
+      const nestedFolders = uri.fsPath
+        .slice(workspaceFolder.length + 1) // Remove root folder prefix
+        .split("/") // List of the individual nested folders
+        .slice(0, -1); // Remove current file name to keep only the folders
+
+      const folders = [workspaceFolder, ...nestedFolders];
+      parent = createTree(ctrl, parent, folders);
+    }
   }
 
-  const existing = ctrl.items.get(id);
+  if (forceRefresh) {
+    parent.delete(id);
+  }
+
+  const existing = parent.get(id);
   if (existing) {
     return existing;
   }
@@ -208,7 +272,7 @@ const getOrCreateFile = async (
   const file = ctrl.createTestItem(id, basename(uri.fsPath), uri);
   file.canResolveChildren = false;
   file.description = testSuite.name;
-  ctrl.items.add(file);
+  parent.add(file);
 
   testData.set(file, { rawTestSuite, testSuite });
 

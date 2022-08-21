@@ -40,6 +40,8 @@
         { "$ref": "#/definitions/step_imap" },
         { "$ref": "#/definitions/step_kafka_consumer" },
         { "$ref": "#/definitions/step_kafka_producer" },
+        { "$ref": "#/definitions/step_rabbitmq_subscriber" },
+        { "$ref": "#/definitions/step_rabbitmq_publisher" },
         { "$ref": "#/definitions/step_readfile" },
         { "$ref": "#/definitions/step_redis" },
         { "$ref": "#/definitions/step_smtp" },
@@ -52,7 +54,11 @@
       "type": "array",
       "items": {
         "oneOf": [
-          { "type": "string" },
+          {
+            "title": "Assertion",
+            "description": "Most common operators:\n- ShouldEqual\n- ShouldContainSubstring\n- ShouldBeEmpty\n- ShouldBeTrue / ShouldBeFalse\n- ShouldBeGreaterThan / ShouldBeGreaterThanOrEqualTo\n- ShouldBeLessThan / ShouldBeLessThanOrEqualTo",
+            "type": "string"
+          },
           {
             "type": "object",
             "additionalProperties": false,
@@ -108,10 +114,10 @@
             }
           }
         },
-        "retry": { "type": "number" },
+        "retry": { "type": "integer" },
         "retry_if": { "$ref": "#/definitions/assertions" },
-        "delay": { "type": "number" },
-        "timeout": { "type": "number" },
+        "delay": { "type": "integer" },
+        "timeout": { "type": "integer" },
         "range": true
       }
     },
@@ -203,7 +209,7 @@
           "type": "object",
           "additionalProperties": { "type": "string" }
         },
-        "connect_timeout": { "type": "number" },
+        "connect_timeout": { "type": "integer" },
         "tls_client_cert": { "type": "string" },
         "tls_client_key": { "type": "string" },
         "tls_root_ca": { "type": "string" },
@@ -229,7 +235,7 @@
           "type": "string",
           "const": "http",
           "title": "Step HTTP",
-          "description": "Result:\n- result.statuscode: HTTP status code of the response\n- result.body: raw response body\n- result.bodyjson: response body parsed as JSON. Example: `result.bodyjson.items.items0.id`\n- result.headers: response headers\n"
+          "description": "Execute HTTP requests\nResult:\n- result.statuscode: HTTP status code of the response\n- result.body: raw response body\n- result.bodyjson: response body parsed as JSON. Example: result.bodyjson.items.items0.id\n- result.headers: response headers\n"
         },
         "method": {
           "type": "string",
@@ -348,14 +354,14 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "messageLimit": { "type": "number" },
+        "messageLimit": { "type": "integer" },
         "initialOffset": {
           "type": "string",
           "enum": ["newest", "oldest"],
           "default": "newest"
         },
         "markOffset": { "type": "boolean" },
-        "waitFor": { "type": "number" },
+        "waitFor": { "type": "integer" },
         "keyFilter": { "type": "string" }
       }
     },
@@ -412,6 +418,83 @@
           }
         },
         "messages_file": { "type": "string" }
+      }
+    },
+    "step_rabbitmq_subscriber": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "addrs", "clientType"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "rabbitmq"
+        },
+        "clientType": {
+          "type": "string",
+          "const": "subscriber"
+        },
+        "addrs": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "qName": { "type": "string" },
+        "durable": { "type": "boolean" },
+        "exchange": { "type": "string" },
+        "exchangeType": {
+          "type": "string",
+          "enum": ["direct", "fanout", "topic", "headers"]
+        },
+        "routingKey": { "type": "string" },
+        "messageLimit": { "type": "integer" }
+      }
+    },
+    "step_rabbitmq_publisher": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "addrs", "clientType"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "rabbitmq"
+        },
+        "clientType": {
+          "type": "string",
+          "const": "publisher"
+        },
+        "addrs": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" },
+        "qName": { "type": "string" },
+        "durable": { "type": "boolean" },
+        "exchange": { "type": "string" },
+        "exchangeType": {
+          "type": "string",
+          "enum": ["direct", "fanout", "topic", "headers"]
+        },
+        "routingKey": { "type": "string" },
+        "messages": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
       }
     },
     "step_readfile": {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2022-08-21
+
+- Add `grpc` step to the JSON schema
+- Add `rabbitmq` (`subscriber` and `publisher`) step to the JSON schema
+- Add changelog
+
 ## 1.0.0 - 2022-08-21
 
 - Display Venom tests in a tree structure, following their filesystem location

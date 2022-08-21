@@ -35,6 +35,7 @@
       "oneOf": [
         { "$ref": "#/definitions/step_exec" },
         { "$ref": "#/definitions/step_dbfixtures" },
+        { "$ref": "#/definitions/step_grpc" },
         { "$ref": "#/definitions/step_http" },
         { "$ref": "#/definitions/step_imap" },
         { "$ref": "#/definitions/step_kafka_consumer" },
@@ -173,6 +174,42 @@
         "script": { "type": "string" }
       }
     },
+    "step_grpc": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "grpc"
+        },
+        "url": { "type": "string" },
+        "service": { "type": "string" },
+        "method": { "type": "string" },
+        "default_fields": { "type": "boolean" },
+        "include_text_separator": { "type": "boolean" },
+        "data": { "type": "object" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "connect_timeout": { "type": "number" },
+        "tls_client_cert": { "type": "string" },
+        "tls_client_key": { "type": "string" },
+        "tls_root_ca": { "type": "string" },
+        "ignore_verify_ssl": { "type": "boolean" }
+      }
+    },
     "step_http": {
       "type": "object",
       "allOf": [{ "$ref": "#/definitions/step_base" }],
@@ -212,6 +249,7 @@
         "path": { "type": "string" },
         "body": { "type": "string" },
         "bodyFile": { "type": "string" },
+        "preserve_bodyfile": { "type": "boolean" },
         "multipart_form": { "type": "object" },
         "headers": {
           "type": "object",
@@ -372,7 +410,8 @@
               "avroSchemaFile": { "type": "string" }
             }
           }
-        }
+        },
+        "messages_file": { "type": "string" }
       }
     },
     "step_readfile": {

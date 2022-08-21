@@ -4,6 +4,7 @@
 !node_modules/
 !out/*
 !schema/
+!CHANGELOG.md
 !LICENSE
 !package.json
 !README.md

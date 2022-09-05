@@ -2,7 +2,7 @@
   "name": "vscode-venom",
   "displayName": "Venom",
   "description": "Venom integration with Visual Studio Code",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "thiht",
   "author": {
     "name": "Thibaut Rousseau"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 - 2022-09-05
+
+- Add `ovhapi` step to the JSON schema (thanks @YoannAtOVH)
+
 ## 1.1.0 - 2022-08-21
 
 - Add `grpc` step to the JSON schema

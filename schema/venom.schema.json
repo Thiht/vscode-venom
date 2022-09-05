@@ -708,7 +708,7 @@
           "items": { "type": "string" }
         },
         "proxy": { "type": "string" },
-        "tls_root_ca": { "type": "string" }
+        "tlsRootCA": { "type": "string" }
       }
     }
   }

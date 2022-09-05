@@ -47,7 +47,8 @@
         { "$ref": "#/definitions/step_smtp" },
         { "$ref": "#/definitions/step_sql" },
         { "$ref": "#/definitions/step_ssh" },
-        { "$ref": "#/definitions/step_web" }
+        { "$ref": "#/definitions/step_web" },
+        { "$ref": "#/definitions/step_ovhapi" }
       ]
     },
     "assertions": {
@@ -656,6 +657,58 @@
         },
         "action": { "type": "object" },
         "screenshot": { "type": "string" }
+      }
+    },
+    "step_ovhapi": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["path", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "ovhapi",
+          "title": "Step ovhapi",
+          "description": "Execute call to OVH API\nResult:\n- result.statuscode: HTTP status code of the response\n- result.body: raw response body\n- result.bodyjson: response body parsed as JSON. Example: result.bodyjson.items.items0.id\n- result.err: if exists, this field contains error\n- result.timeseconds: execution duration\n"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH"
+          ]
+        },
+        "path": { "type": "string" },
+        "body": { "type": "string" },
+        "bodyFile": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "applicationKey": { "type": "string" },
+        "applicationSecret": { "type": "string" },
+        "consumerKey": { "type": "string" },
+        "noAuth": { "type": "boolean" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "resolve": {
+          "description": "List of custom resolvers (example: example.com:443:127.0.0.1)",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "proxy": { "type": "string" },
+        "tlsRootCA": { "type": "string" }
       }
     }
   }

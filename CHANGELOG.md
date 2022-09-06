@@ -1,8 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2022-09-06
+
+- Compatibility with Venom 1.1.0-beta.5
+
 ## 1.2.0 - 2022-09-05
 
-- Add `ovhapi` step to the JSON schema (thanks @YoannAtOVH)
+- Add `ovhapi` step to the JSON schema (thanks [@YoannAtOVH](https://github.com/YoannAtOVH))
 
 ## 1.1.0 - 2022-08-21
 

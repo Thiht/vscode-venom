@@ -164,6 +164,7 @@ export const run = async (filepath: string, cwd: string) => {
 
     const args = [
       "--format=json",
+      "--verbose=0",
       `--output-dir=${venomTmpDir}`,
       ...additionalArgs,
     ].join(" ");

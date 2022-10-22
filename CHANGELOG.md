@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 - 2022-10-22
+
+- Fix crash when `.venomrc` is configured with a `verbosity` > 0 (thanks [@YoannAtOVH](https://github.com/YoannAtOVH))
+
 ## 1.3.0 - 2022-09-06
 
 - Compatibility with Venom 1.1.0-beta.5

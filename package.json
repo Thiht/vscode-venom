@@ -24,7 +24,9 @@
     "Testing"
   ],
   "activationEvents": [
-    "workspaceContains:**/*.venom.yml"
+    "workspaceContains:**/*.venom.yml",
+    "workspaceContains:**/.venomrc",
+    "onCommand:venom.jsonToAssertions"
   ],
   "extensionDependencies": [
     "redhat.vscode-yaml"

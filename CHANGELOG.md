@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0 - 2022-11-30
+
+- Activate the Venom extension when the workspace contains a `.venomrc` file, or when the `venom.jsonToAssertions` command is used
+- Add `mongo` step to the JSON schema
+
 ## 1.3.1 - 2022-10-22
 
 - Fix crash when `.venomrc` is configured with a `verbosity` > 0 (thanks [@YoannAtOVH](https://github.com/YoannAtOVH))

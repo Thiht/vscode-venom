@@ -40,6 +40,7 @@
         { "$ref": "#/definitions/step_imap" },
         { "$ref": "#/definitions/step_kafka_consumer" },
         { "$ref": "#/definitions/step_kafka_producer" },
+        { "$ref": "#/definitions/step_mongo" },
         { "$ref": "#/definitions/step_rabbitmq_subscriber" },
         { "$ref": "#/definitions/step_rabbitmq_publisher" },
         { "$ref": "#/definitions/step_readfile" },
@@ -421,6 +422,172 @@
         "messages_file": { "type": "string" }
       }
     },
+    "step_mongo": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/step_base" }],
+      "required": ["type", "uri", "database", "collection"],
+      "additionalProperties": false,
+      "properties": {
+        "info": true,
+        "assertions": true,
+        "skip": true,
+        "vars": true,
+        "retry": true,
+        "retry_if": true,
+        "delay": true,
+        "timeout": true,
+        "range": true,
+        "type": {
+          "type": "string",
+          "const": "mongo"
+        },
+        "uri": { "type": "string" },
+        "database": { "type": "string" },
+        "collection": { "type": "string" },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step_mongo_action" }
+        }
+      }
+    },
+    "step_mongo_action": {
+      "oneOf": [
+        { "$ref": "#/definitions/step_mongo_action_aggregate" },
+        { "$ref": "#/definitions/step_mongo_action_collection_create" },
+        { "$ref": "#/definitions/step_mongo_action_collection_drop" },
+        { "$ref": "#/definitions/step_mongo_action_count" },
+        { "$ref": "#/definitions/step_mongo_action_delete" },
+        { "$ref": "#/definitions/step_mongo_action_find" },
+        { "$ref": "#/definitions/step_mongo_action_insert" },
+        { "$ref": "#/definitions/step_mongo_action_update" }
+      ]
+    },
+    "step_mongo_action_aggregate": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "delete"
+        },
+        "pipeline": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "step_mongo_action_collection_create": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "createCollection"
+        }
+      }
+    },
+    "step_mongo_action_collection_drop": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "dropCollection"
+        }
+      }
+    },
+    "step_mongo_action_count": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "count"
+        },
+        "filter": { "type": "string" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "limit": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "step_mongo_action_delete": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "delete"
+        },
+        "filter": { "type": "string" }
+      }
+    },
+    "step_mongo_action_find": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "find"
+        },
+        "filter": { "type": "string" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "limit": { "type": "integer" },
+            "skip": { "type": "integer" },
+            "sort": { "type": "string" },
+            "projection": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step_mongo_action_insert": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "insert"
+        },
+        "documents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "file": { "type": "string" }
+      }
+    },
+    "step_mongo_action_update": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "update"
+        },
+        "filter": { "type": "string" },
+        "update": { "type": "string" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "upsert": { "type": "boolean" }
+          }
+        }
+      }
+    },
     "step_rabbitmq_subscriber": {
       "type": "object",
       "allOf": [{ "$ref": "#/definitions/step_base" }],
@@ -682,13 +849,7 @@
         },
         "method": {
           "type": "string",
-          "enum": [
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "PATCH"
-          ]
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
         },
         "path": { "type": "string" },
         "body": { "type": "string" },

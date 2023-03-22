@@ -1,0 +1,5 @@
+executor: custom
+input:
+  test: {}
+output:
+  test: {}

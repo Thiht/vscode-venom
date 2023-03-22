@@ -1,8 +1,14 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
-import { basename } from "path";
+import { basename, join, relative, isAbsolute } from "path";
+import { readFileSync } from "fs";
 import * as yaml from "js-yaml";
-import { parseFailureMessage, run as venomRun, TestSuite } from "./venom";
+import {
+  parseFailureMessage,
+  run as venomRun,
+  TestSuite,
+  ConfigurationFile,
+} from "./venom";
 import { convertDocument } from "./commands";
 
 // Used to read files from disk
@@ -19,6 +25,8 @@ export const activate = async (context: vscode.ExtensionContext) => {
   context.subscriptions.push(
     vscode.commands.registerCommand("venom.jsonToAssertions", convertDocument)
   );
+
+  await loadCustomExecutors(context);
 
   const ctrl = vscode.tests.createTestController(
     "venomTestController",
@@ -329,5 +337,130 @@ const getContentFromFilesystem = async (uri: vscode.Uri) => {
   } catch (e) {
     outputChannel.appendLine(`Failed to read file ${uri.fsPath}: ${e}`);
     return "";
+  }
+};
+
+// YAML extension stuff
+
+const VSCODE_YAML_EXTENSION_ID = "redhat.vscode-yaml";
+
+// Retrieved from redhat-developer/vscode-yaml
+// See: https://github.com/redhat-developer/vscode-yaml/blob/268fef3361bd01e8167e8ba29d08bc116927992c/src/schema-extension-api.ts#LL38-L46C2
+interface YAMLExtensionAPI {
+  registerContributor(
+    schema: string,
+    requestSchema: (resource: string) => string,
+    requestSchemaContent: (uri: string) => Promise<string> | string,
+    label?: string
+  ): boolean;
+}
+
+const activateYAMLExtension = async () => {
+  const extension = vscode.extensions.getExtension<YAMLExtensionAPI>(
+    VSCODE_YAML_EXTENSION_ID
+  );
+  if (!extension) {
+    return undefined;
+  }
+
+  if (extension.isActive) {
+    return extension.exports;
+  }
+
+  const extensionAPI = await extension.activate();
+  if (!extensionAPI) {
+    return undefined;
+  }
+  return extensionAPI;
+};
+
+const CUSTOM_EXECUTOR_SCHEMA = "VSCODE_VENOM_CUSTOM_EXECUTOR_SCHEMA";
+
+const loadCustomExecutors = async (context: vscode.ExtensionContext) => {
+  const yamlExtension = await activateYAMLExtension();
+  if (!yamlExtension) {
+    outputChannel.appendLine(
+      "Failed to activate YAML extension, custom executors won't be parsed"
+    );
+    return;
+  }
+
+  outputChannel.appendLine("Loading venom-custom-executor.schema.json");
+  const customExecutorSchema: string = await (async () => {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(
+        vscode.Uri.parse(
+          context.asAbsolutePath("schema/venom-custom-executor.schema.json")
+        )
+      );
+      return textDecoder.decode(bytes);
+    } catch (e) {
+      outputChannel.appendLine(
+        "Failed to load venom-custom-executor.schema.json"
+      );
+      return "";
+    }
+  })();
+
+  outputChannel.appendLine(
+    "Registering custom executor schema to YAML extension"
+  );
+  const registered = yamlExtension.registerContributor(
+    CUSTOM_EXECUTOR_SCHEMA,
+
+    (resource: string) => {
+      const resourceURI = vscode.Uri.parse(resource);
+      const workspace = vscode.workspace.getWorkspaceFolder(resourceURI);
+
+      // FIXME: the .venomrc is read on each invocation and it uses readFileSync
+      // This should be replaced with a file watcher and async reading outside of requestSchemaContent
+      const venomrc = (() => {
+        const venomrcPath = join(workspace!.uri.fsPath, ".venomrc");
+        try {
+          const bytes = readFileSync(venomrcPath);
+          const venomrcFile = textDecoder.decode(bytes);
+          return yaml.load(venomrcFile, {
+            filename: venomrcPath,
+          }) as ConfigurationFile;
+        } catch (e) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((e as any)?.code === "ENOENT") {
+            // No .venomrc file in workspace
+          } else {
+            outputChannel.appendLine(
+              `Failed to read .venomrc file in workspace: ${e}`
+            );
+          }
+          return undefined;
+        }
+      })();
+
+      const venomLibDirName = venomrc?.lib_dir ?? "lib";
+      const venomLibDirPath = join(workspace!.uri.fsPath, venomLibDirName);
+
+      const relativePath = relative(venomLibDirPath, resourceURI.fsPath);
+      const isSubdir =
+        relativePath &&
+        !relativePath.startsWith("..") &&
+        !isAbsolute(relativePath);
+
+      if (isSubdir) {
+        return `${CUSTOM_EXECUTOR_SCHEMA}://schema/venom-custom-executor.schema.json`;
+      }
+      return "";
+    },
+
+    (uri: string) => {
+      const parsedUri = vscode.Uri.parse(uri);
+      if (parsedUri.scheme !== CUSTOM_EXECUTOR_SCHEMA) {
+        return "";
+      }
+      return customExecutorSchema;
+    }
+  );
+  if (!registered) {
+    outputChannel.appendLine(
+      "Failed to register custom executor schema to YAML extension"
+    );
   }
 };

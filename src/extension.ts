@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import { basename, join, relative, isAbsolute } from "path";
-import { readFileSync } from "fs";
 import * as yaml from "js-yaml";
 import {
   parseFailureMessage,
@@ -376,6 +375,61 @@ const activateYAMLExtension = async () => {
 
 const CUSTOM_EXECUTOR_SCHEMA = "VSCODE_VENOM_CUSTOM_EXECUTOR_SCHEMA";
 
+const venomrcByWorkspace = new Map<string, ConfigurationFile>();
+
+const startWatchingVenomrcFiles = () => {
+  if (!vscode.workspace.workspaceFolders) {
+    return [];
+  }
+
+  const patterns = vscode.workspace.workspaceFolders.map(
+    (workspaceFolder) => new vscode.RelativePattern(workspaceFolder, ".venomrc")
+  );
+
+  const watchers = patterns.map((pattern) => {
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+    const loadVenomrcFile = async (uri: vscode.Uri) => {
+      const workspacePath =
+        vscode.workspace.getWorkspaceFolder(uri)!.uri.fsPath;
+      const bytes = await vscode.workspace.fs.readFile(uri);
+      const venomrcFile = textDecoder.decode(bytes);
+      const venomrc = yaml.load(venomrcFile, {
+        filename: uri.fsPath,
+      }) as ConfigurationFile;
+      venomrcByWorkspace.set(workspacePath, venomrc);
+    };
+
+    // Initial load of the .venomrc files
+    (async () => {
+      for (const uri of await vscode.workspace.findFiles(pattern)) {
+        await loadVenomrcFile(uri);
+      }
+    })();
+
+    watcher.onDidCreate(async (uri) => {
+      outputChannel.appendLine(`${uri.fsPath} created`);
+      await loadVenomrcFile(uri);
+    });
+
+    watcher.onDidChange(async (uri) => {
+      outputChannel.appendLine(`${uri.fsPath} updated`);
+      await loadVenomrcFile(uri);
+    });
+
+    watcher.onDidDelete((uri) => {
+      outputChannel.appendLine(`${uri.fsPath} deleted`);
+      const workspacePath =
+        vscode.workspace.getWorkspaceFolder(uri)!.uri.fsPath;
+      venomrcByWorkspace.delete(workspacePath);
+    });
+
+    return watcher;
+  });
+
+  return watchers;
+};
+
 const loadCustomExecutors = async (context: vscode.ExtensionContext) => {
   const yamlExtension = await activateYAMLExtension();
   if (!yamlExtension) {
@@ -402,6 +456,9 @@ const loadCustomExecutors = async (context: vscode.ExtensionContext) => {
     }
   })();
 
+  const watchersVenomrc = await startWatchingVenomrcFiles();
+  context.subscriptions.push(...watchersVenomrc);
+
   outputChannel.appendLine(
     "Registering custom executor schema to YAML extension"
   );
@@ -412,29 +469,7 @@ const loadCustomExecutors = async (context: vscode.ExtensionContext) => {
       const resourceURI = vscode.Uri.parse(resource);
       const workspace = vscode.workspace.getWorkspaceFolder(resourceURI);
 
-      // FIXME: the .venomrc is read on each invocation and it uses readFileSync
-      // This should be replaced with a file watcher and async reading outside of requestSchemaContent
-      const venomrc = (() => {
-        const venomrcPath = join(workspace!.uri.fsPath, ".venomrc");
-        try {
-          const bytes = readFileSync(venomrcPath);
-          const venomrcFile = textDecoder.decode(bytes);
-          return yaml.load(venomrcFile, {
-            filename: venomrcPath,
-          }) as ConfigurationFile;
-        } catch (e) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((e as any)?.code === "ENOENT") {
-            // No .venomrc file in workspace
-          } else {
-            outputChannel.appendLine(
-              `Failed to read .venomrc file in workspace: ${e}`
-            );
-          }
-          return undefined;
-        }
-      })();
-
+      const venomrc = venomrcByWorkspace.get(workspace!.uri.fsPath);
       const venomLibDirName = venomrc?.lib_dir ?? "lib";
       const venomLibDirPath = join(workspace!.uri.fsPath, venomLibDirName);
 

@@ -102,6 +102,7 @@ const findVenom = async () => {
           vscode.Uri.parse("https://github.com/ovh/venom#installing")
         );
         break;
+
       case "Set Venom binary location":
         vscode.commands.executeCommand(
           "workbench.action.openSettings",

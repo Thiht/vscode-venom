@@ -469,7 +469,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "const": "delete"
+          "const": "aggregate"
         },
         "pipeline": {
           "type": "array",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 - 2023-07-28
+
+- Add `query_parameters` property to `http` step in the JSON schema (thanks [@ivan-velasco](https://github.com/ivan-velasco))
+
 ## 1.4.0 - 2022-11-30
 
 - Activate the Venom extension when the workspace contains a `.venomrc` file, or when the `venom.jsonToAssertions` command is used

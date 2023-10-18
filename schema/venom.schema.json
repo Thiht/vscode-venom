@@ -255,6 +255,10 @@
         },
         "url": { "type": "string" },
         "path": { "type": "string" },
+        "query_parameters": { 
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "body": { "type": "string" },
         "bodyFile": { "type": "string" },
         "preserve_bodyfile": { "type": "boolean" },

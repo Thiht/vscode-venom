@@ -26,7 +26,7 @@ const pathSanitize = (path: string) => path.replace(/:/g, "_");
 const jsonToVenomAssertions = (json: any, path: string[]): string[] => {
   const assertions = [];
   if (Array.isArray(json)) {
-    assertions.push(path.join(".") + ".__Len__ ShouldEqual " + json.length);
+    assertions.push(path.join(".") + " ShouldHaveLength " + json.length);
     for (let i = 0; i < json.length; i++) {
       assertions.push(
         ...jsonToVenomAssertions(json[i], [

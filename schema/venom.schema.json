@@ -144,7 +144,7 @@
         },
         "database": {
           "type": "string",
-          "enum": ["mysql", "postgres"]
+          "enum": ["mysql", "postgres", "sqlite3"]
         },
         "dsn": { "type": "string" },
         "files": {
@@ -255,7 +255,7 @@
         },
         "url": { "type": "string" },
         "path": { "type": "string" },
-        "query_parameters": { 
+        "query_parameters": {
           "type": "object",
           "additionalProperties": { "type": "string" }
         },
@@ -345,6 +345,7 @@
           "items": { "type": "string" }
         },
         "withTLS": { "type": "boolean" },
+        "insecure_tls": { "type": "boolean" },
         "withSASL": { "type": "boolean" },
         "withSASLHandshaked": { "type": "boolean" },
         "withAVRO": { "type": "boolean" },
@@ -399,6 +400,7 @@
           "items": { "type": "string" }
         },
         "withTLS": { "type": "boolean" },
+        "insecure_tls": { "type": "boolean" },
         "withSASL": { "type": "boolean" },
         "withSASLHandshaked": { "type": "boolean" },
         "withAVRO": { "type": "boolean" },
@@ -417,6 +419,10 @@
             "properties": {
               "key": { "type": "string" },
               "topic": { "type": "string" },
+              "headers": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
               "value": { "type": "string" },
               "valueFile": { "type": "string" },
               "avroSchemaFile": { "type": "string" }
@@ -463,6 +469,7 @@
         { "$ref": "#/definitions/step_mongo_action_delete" },
         { "$ref": "#/definitions/step_mongo_action_find" },
         { "$ref": "#/definitions/step_mongo_action_insert" },
+        { "$ref": "#/definitions/step_mongo_action_load_fixtures" },
         { "$ref": "#/definitions/step_mongo_action_update" }
       ]
     },
@@ -570,6 +577,18 @@
           "items": { "type": "string" }
         },
         "file": { "type": "string" }
+      }
+    },
+    "step_mongo_action_load_fixtures": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "loadFixtures"
+        },
+        "folder": { "type": "string" }
       }
     },
     "step_mongo_action_update": {
@@ -769,7 +788,7 @@
         },
         "driver": {
           "type": "string",
-          "enum": ["mysql", "postgres", "oracle"]
+          "enum": ["mysql", "postgres", "oracle", "sqlite"]
         },
         "dsn": { "type": "string" },
         "commands": {

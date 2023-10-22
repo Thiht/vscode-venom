@@ -288,7 +288,7 @@
     "step_imap": {
       "type": "object",
       "allOf": [{ "$ref": "#/definitions/step_base" }],
-      "required": ["type", "imaphost"],
+      "required": ["type"],
       "additionalProperties": false,
       "properties": {
         "info": true,
@@ -304,17 +304,214 @@
           "type": "string",
           "const": "imap"
         },
-        "imaphost": { "type": "string" },
-        "imapport": { "type": "string" },
-        "imapuser": { "type": "string" },
-        "imappassword": { "type": "string" },
-        "mbox": { "type": "string" },
-        "mboxonsuccess": { "type": "string" },
-        "deleteonsuccess": { "type": "boolean" },
-        "searchfrom": { "type": "string" },
-        "searchto": { "type": "string" },
-        "searchsubject": { "type": "string" },
-        "searchbody": { "type": "string" }
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "withtls": { "type": "boolean" },
+            "host": { "type": "string" },
+            "port": { "type": "string" },
+            "user": { "type": "string" },
+            "password": { "type": "string" }
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step_imap_command" }
+        }
+      }
+    },
+    "step_imap_command": {
+      "oneOf": [
+        { "$ref": "#/definitions/step_imap_command_append" },
+        { "$ref": "#/definitions/step_imap_command_create" },
+        { "$ref": "#/definitions/step_imap_command_clear" },
+        { "$ref": "#/definitions/step_imap_command_delete" },
+        { "$ref": "#/definitions/step_imap_command_fetch" },
+        { "$ref": "#/definitions/step_imap_command_flag" },
+        { "$ref": "#/definitions/step_imap_command_move" }
+      ]
+    },
+    "step_imap_command_append": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "append"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" },
+            "from": { "type": "string" },
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" },
+            "flags": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "step_imap_command_clear": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "clear"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailboxes": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "step_imap_command_create": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "create"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step_imap_command_delete": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "delete"
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" },
+            "uid": { "type": "number" },
+            "from": { "type": "string" },
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step_imap_command_fetch": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "fetch"
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" },
+            "uid": { "type": "number" },
+            "from": { "type": "string" },
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step_imap_command_flag": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "flag"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "add": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "remove": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "set": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" },
+            "uid": { "type": "number" },
+            "from": { "type": "string" },
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step_imap_command_move": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "move"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" }
+          }
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": { "type": "string" },
+            "uid": { "type": "number" },
+            "from": { "type": "string" },
+            "to": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
       }
     },
     "step_kafka_consumer": {
@@ -435,7 +632,7 @@
     "step_mongo": {
       "type": "object",
       "allOf": [{ "$ref": "#/definitions/step_base" }],
-      "required": ["type", "uri", "database", "collection"],
+      "required": ["type", "uri", "database"],
       "additionalProperties": false,
       "properties": {
         "info": true,

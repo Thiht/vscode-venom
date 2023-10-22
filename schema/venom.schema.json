@@ -12,6 +12,10 @@
         "name": { "type": "string" },
         "version": { "type": "string" },
         "vars": { "type": "object" },
+        "secrets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "testcases": {
           "type": "array",
           "items": { "$ref": "#/definitions/test_case" }
@@ -112,7 +116,8 @@
             "additionalProperties": false,
             "properties": {
               "from": { "type": "string" },
-              "regex": { "type": "string" }
+              "regex": { "type": "string" },
+              "default": {}
             }
           }
         },

@@ -1,11 +1,5 @@
 import * as vscode from "vscode";
 
-const replaceSelection = (
-  editor: vscode.TextEditorEdit,
-  selection: vscode.Selection,
-  data: string
-) => editor.replace(selection, data);
-
 const replaceDocument = (
   editor: vscode.TextEditorEdit,
   document: vscode.TextDocument,
@@ -23,6 +17,7 @@ const replaceDocument = (
 
 const pathSanitize = (path: string) => path.replace(/:/g, "_");
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const jsonToVenomAssertions = (json: any, path: string[]): string[] => {
   const assertions = [];
   if (Array.isArray(json)) {
@@ -87,12 +82,12 @@ export const convertDocument = async () => {
       const input = select || activeEditor.document.getText();
 
       try {
-        const json = JSON.parse(input); // Validate JSON  const pathSanitize = (path) => path.toLowerCase().replace(/:/g, "_");
+        const json = JSON.parse(input);
         const assertions = jsonToVenomAssertions(json, prefix)
           .map((assertion) => "- " + assertion)
           .join("\n");
         select
-          ? replaceSelection(editor, activeEditor.selection, assertions)
+          ? editor.replace(activeEditor.selection, assertions)
           : replaceDocument(editor, activeEditor.document, assertions);
       } catch {
         vscode.window.showErrorMessage(

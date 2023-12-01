@@ -70,6 +70,19 @@ interface TestResultFailure {
   value: string;
 }
 
+export interface CustomExecutor {
+  executor: string;
+  input: Record<string, unknown>;
+  steps: unknown[];
+  output: Record<string, unknown>;
+}
+
+export const defaultLibDir = "lib";
+
+export interface ConfigurationFile {
+  lib_dir?: string;
+}
+
 // FIXME: this should use the official ExecException but it currently lacks stdout and stderr
 // See: https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58854
 interface ExecException {
@@ -98,6 +111,7 @@ const findVenom = async () => {
           vscode.Uri.parse("https://github.com/ovh/venom#installing")
         );
         break;
+
       case "Set Venom binary location":
         vscode.commands.executeCommand(
           "workbench.action.openSettings",

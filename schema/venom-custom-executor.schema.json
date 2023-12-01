@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Venom Custom Executor",
+  "description": "Venom is a declarative integration testing framework",
+  "type": "object",
+  "$ref": "#/definitions/custom_executor",
+  "definitions": {
+    "custom_executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "executor": { "type": "string" },
+        "input": { "type": "object" },
+        "steps": { "type": "array" },
+        "output": { "type": "object" }
+      }
+    }
+  }
+}

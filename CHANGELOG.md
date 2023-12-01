@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.0 - 2023-12-01
+
+- Add initial support for [user defined executors](https://github.com/ovh/venom#user-defined-executors)
+
 ## 1.6.0 - 2023-10-22
 
 - Make assertions generated from JSON case insensitive following [ovh/venom#709](https://github.com/ovh/venom/pull/709) (thanks [@ivan-velasco](https://github.com/ivan-velasco))

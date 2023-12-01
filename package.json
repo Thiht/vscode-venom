@@ -42,10 +42,6 @@
     ],
     "yamlValidation": [
       {
-        "fileMatch": "/**/*.venom.yml",
-        "url": "./schema/venom.schema.json"
-      },
-      {
         "fileMatch": "/.venomrc",
         "url": "./schema/venomrc.schema.json"
       }

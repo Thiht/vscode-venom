@@ -5,9 +5,6 @@ import * as yaml from "js-yaml";
 import { parseFailureMessage, run as venomRun, TestSuite } from "./venom";
 import { log } from "./log";
 
-// Used to read files from disk
-const textDecoder = new TextDecoder("utf-8");
-
 // Rich data linked to each test item
 const testData = new WeakMap<
   vscode.TestItem,
@@ -327,9 +324,9 @@ const startWatchingWorkspace = (ctrl: vscode.TestController) =>
 const getContentFromFilesystem = async (uri: vscode.Uri) => {
   try {
     const rawContent = await vscode.workspace.fs.readFile(uri);
-    return textDecoder.decode(rawContent);
+    return new TextDecoder("utf-8").decode(rawContent);
   } catch (e) {
-    log.warn(`Failed to read file ${uri.fsPath}: ${e}`);
+    log.warn(`Failed to read file ${uri.fsPath}`, e);
     return "";
   }
 };

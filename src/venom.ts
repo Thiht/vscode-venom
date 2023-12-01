@@ -70,6 +70,15 @@ interface TestResultFailure {
   value: string;
 }
 
+export interface CustomExecutor {
+  executor: string;
+  input: Record<string, unknown>;
+  steps: unknown[];
+  output: Record<string, unknown>;
+}
+
+export const defaultLibDir = "lib";
+
 export interface ConfigurationFile {
   lib_dir?: string;
 }

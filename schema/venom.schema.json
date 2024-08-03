@@ -19,7 +19,8 @@
         "testcases": {
           "type": "array",
           "items": { "$ref": "#/definitions/test_case" }
-        }
+        },
+        "describe": { "type": "string" }
       }
     },
     "test_case": {
@@ -125,7 +126,8 @@
         "retry_if": { "$ref": "#/definitions/assertions" },
         "delay": { "type": "integer" },
         "timeout": { "type": "integer" },
-        "range": true
+        "range": true,
+        "name": { "type": "string" }
       }
     },
     "step_dbfixtures": {

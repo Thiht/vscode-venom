@@ -110,6 +110,10 @@
           ]
         },
         "assertions": { "$ref": "#/definitions/assertions" },
+        "skip": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "vars": {
           "type": "object",
           "additionalProperties": {

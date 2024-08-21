@@ -90,6 +90,7 @@ export const loadSchemaTestSuites = async (
           {
             type: "object",
             allOf: [{ $ref: "#/definitions/step_base" }],
+            required: ["type"],
             additionalProperties: false,
             properties: {
               info: true,

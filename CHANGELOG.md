@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 - 2024-08-21
+
+- Fix step autocompletion for custom executors
+- Add `skip` key to the schema of all the steps
+
 ## 1.7.0 - 2023-12-01
 
 - Add initial support for [user defined executors](https://github.com/ovh/venom#user-defined-executors)

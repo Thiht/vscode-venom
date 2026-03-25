@@ -79,4 +79,65 @@ const globalItems = completionItemsForPartial("", scopedWithGlobal, {
 assert.ok(globalItems.some((i) => i.label === "apiHost" && i.detail === "global"));
 assert.ok(globalItems.some((i) => i.label === "dbUser" && i.detail === "global"));
 
+// =============================================================
+// findVarDefinitionLine tests
+// =============================================================
+const { findVarDefinitionLine } = require("../out/venomVariables");
+
+// Suite-level var
+const defLine = findVarDefinitionLine(sampleYaml, "baseUrl", 0);
+assert.strictEqual(defLine, 2, "baseUrl should be on line 2 (0-based)");
+
+// Step-level var
+const tokenDefLine = findVarDefinitionLine(sampleYaml, "token", 0);
+assert.strictEqual(tokenDefLine, 10, "token should be on step vars line");
+
+// Non-existent var -> undefined
+assert.strictEqual(findVarDefinitionLine(sampleYaml, "nope", 0), undefined);
+
+// Step var preferred over suite var when both exist
+const overrideYaml = `name: override test
+vars:
+  foo: from-suite
+testcases:
+  - name: tc
+    steps:
+      - type: exec
+        vars:
+          foo:
+            from: result.code
+`;
+const overrideLines = overrideYaml.split("\n");
+const fooSuiteLine = overrideLines.findIndex((l) => l === "  foo: from-suite");
+const fooStepLine = overrideLines.findIndex((l) => l === "          foo:");
+assert.ok(fooSuiteLine >= 0);
+assert.ok(fooStepLine >= 0);
+// With testcaseIndex=0, step var should win
+assert.strictEqual(findVarDefinitionLine(overrideYaml, "foo", 0), fooStepLine);
+// With testcaseIndex=undefined, suite var should be returned
+assert.strictEqual(findVarDefinitionLine(overrideYaml, "foo", undefined), fooSuiteLine);
+
+// =============================================================
+// Diagnostics logic: BUILTIN_VENOM_KEYS should be recognized
+// =============================================================
+const { BUILTIN_VENOM_KEYS, RANGE_KEYS } = require("../out/venomVariables");
+assert.ok(BUILTIN_VENOM_KEYS.includes("venom.testcase"));
+assert.ok(RANGE_KEYS.includes("value"));
+
+// Verify that scoped variables do NOT include undefined refs
+const undefinedRefYaml = `name: diag test
+vars:
+  host: localhost
+testcases:
+  - name: tc
+    steps:
+      - type: exec
+        script: "echo {{.host}} {{.undefined_var}}"
+`;
+const diagCtx = parseVenomVariables(undefinedRefYaml);
+diagCtx.globalVars = [];
+const diagScoped = getScopedVariables(diagCtx, 0, 0);
+assert.ok(diagScoped.some((s) => s.templateKey === "host"), "host should be in scope");
+assert.ok(!diagScoped.some((s) => s.templateKey === "undefined_var"), "undefined_var should NOT be in scope");
+
 console.log("venomVariables tests ok");

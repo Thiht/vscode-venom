@@ -3,6 +3,8 @@ import { convertDocument } from "./commands";
 import { registerVenomCompletion } from "./venomCompletion";
 import { registerVenomHover } from "./venomHover";
 import { registerVenomVariablesView } from "./venomVariablesView";
+import { registerVenomDiagnostics } from "./venomDiagnostics";
+import { registerVenomDefinition } from "./venomDefinition";
 import { loadSchemaTestSuites } from "./schemaTestSuites";
 import { loadSchemaCustomExecutors } from "./schemaCustomExecutors";
 import { loadTestView } from "./testView";
@@ -39,6 +41,8 @@ export const activate = async (context: vscode.ExtensionContext) => {
   context.subscriptions.push(registerVenomCompletion());
   context.subscriptions.push(registerVenomHover());
   context.subscriptions.push(...registerVenomVariablesView());
+  context.subscriptions.push(...registerVenomDiagnostics());
+  context.subscriptions.push(registerVenomDefinition());
 
   // Populate global vars cache
   await refreshGlobalVarsCache();

@@ -446,7 +446,7 @@ export function getCompletionContext(
   };
 }
 
-const BUILTIN_VENOM_KEYS = [
+export const BUILTIN_VENOM_KEYS = [
   "venom.testcase",
   "venom.testsuite",
   "venom.teststep.number",
@@ -457,7 +457,7 @@ const BUILTIN_VENOM_KEYS = [
   "venom.libdir",
 ];
 
-const RANGE_KEYS = ["index", "key", "value"];
+export const RANGE_KEYS = ["index", "key", "value"];
 
 /**
  * Build completion labels for current partial path inside {{. ... }}
@@ -580,4 +580,100 @@ export function stepHasRangeAtLine(
   const tc = ctx.testcases[testcaseIndex];
   const st = tc?.steps.find((s) => s.index === stepIndex);
   return st?.hasRange ?? false;
+}
+
+/**
+ * Find the YAML line where `varName` is defined under a `vars:` block
+ * within the given testcase (or at suite level).
+ *
+ * Returns the last matching definition to match Venom's "last definition wins".
+ */
+export function findVarDefinitionLine(
+  text: string,
+  varName: string,
+  testcaseIndex: number | undefined
+): number | undefined {
+  const lines = text.split(/\r?\n/);
+
+  let inSuiteVars = false;
+  let suiteVarLine: number | undefined;
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i];
+    const t = L.trimStart();
+    const indent = L.length - t.length;
+
+    if (indent === 0 && /^vars:\s*$/.test(t)) {
+      inSuiteVars = true;
+      continue;
+    }
+    if (inSuiteVars) {
+      if (indent === 0 && t.length > 0 && !t.startsWith("#")) {
+        inSuiteVars = false;
+        continue;
+      }
+      const keyMatch = t.match(/^(\w[\w.-]*):/);
+      if (keyMatch && indent === 2 && keyMatch[1] === varName) {
+        suiteVarLine = i;
+      }
+    }
+  }
+
+  if (testcaseIndex !== undefined) {
+    let inTestCases = false;
+    let currentTc = -1;
+    let inStepVars = false;
+    let stepVarLine: number | undefined;
+
+    for (let i = 0; i < lines.length; i++) {
+      const L = lines[i];
+      const t = L.trimStart();
+      const indent = L.length - t.length;
+
+      if (/^testcases:\s*$/.test(t) && indent === 0) {
+        inTestCases = true;
+        currentTc = -1;
+        inStepVars = false;
+        continue;
+      }
+      if (!inTestCases) continue;
+
+      if (
+        indent === 0 &&
+        t.length > 0 &&
+        !t.startsWith("#") &&
+        !/^testcases:/.test(t)
+      ) {
+        inTestCases = false;
+        continue;
+      }
+
+      if (/^ {2}-[\s]/.test(L)) {
+        currentTc += 1;
+        inStepVars = false;
+        continue;
+      }
+
+      if (currentTc !== testcaseIndex) continue;
+
+      if (/^vars:\s*$/.test(t) && indent >= 8) {
+        inStepVars = true;
+        continue;
+      }
+
+      if (inStepVars && indent <= 8 && t.length > 0 && !t.startsWith("#")) {
+        inStepVars = false;
+      }
+
+      if (inStepVars && indent === 10) {
+        const keyMatch = t.match(/^(\w[\w.-]*):/);
+        if (keyMatch && keyMatch[1] === varName) {
+          stepVarLine = i;
+        }
+      }
+    }
+
+    if (stepVarLine !== undefined) return stepVarLine;
+  }
+
+  return suiteVarLine;
 }

@@ -1,1 +1,6 @@
 lib_dir: lib-venom/
+variables:
+  - fromVenomrc=hello-from-rc
+  - environment=dev
+variables_files:
+  - vars.yaml

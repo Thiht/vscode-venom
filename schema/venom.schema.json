@@ -149,6 +149,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "dbfixtures"
@@ -186,6 +187,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "exec"
@@ -208,6 +210,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "grpc"
@@ -244,6 +247,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "http",
@@ -311,6 +315,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "imap"
@@ -540,6 +545,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "kafka"
@@ -595,6 +601,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "kafka"
@@ -655,6 +662,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "mongo"
@@ -834,6 +842,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "rabbitmq"
@@ -871,6 +880,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "rabbitmq"
@@ -911,6 +921,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "readfile"
@@ -933,6 +944,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "redis"
@@ -960,6 +972,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "smtp"
@@ -990,6 +1003,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "sql"
@@ -1021,6 +1035,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "ssh"
@@ -1049,6 +1064,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "web"
@@ -1072,6 +1088,7 @@
         "delay": true,
         "timeout": true,
         "range": true,
+        "name": true,
         "type": {
           "type": "string",
           "const": "ovhapi",

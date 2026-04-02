@@ -1,0 +1,3 @@
+apiHost: https://api.example.com
+dbName: testdb
+timeout: "30"

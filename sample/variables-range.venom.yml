@@ -1,0 +1,32 @@
+name: Range iteration with variables
+vars:
+  prefix: item
+
+testcases:
+  - name: Range over list
+    steps:
+      - type: exec
+        range:
+          - apple
+          - banana
+          - cherry
+        script: echo "{{.prefix}}-{{.value}}"
+        assertions:
+          - result.systemout ShouldContainSubstring "{{.prefix}}"
+
+  - name: Range with vars extraction
+    steps:
+      - type: exec
+        name: seed
+        script: echo "seed-value"
+        vars:
+          seed:
+            from: result.systemout
+
+      - type: exec
+        range:
+          - first
+          - second
+        script: echo "{{.seed}}-{{.value}}-{{.index}}"
+        assertions:
+          - result.systemout ShouldContainSubstring "seed-value"

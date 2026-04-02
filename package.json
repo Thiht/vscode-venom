@@ -46,6 +46,23 @@
         "url": "./schema/venomrc.schema.json"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "venom",
+          "title": "Venom",
+          "icon": "media/venom-activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "venom": [
+        {
+          "id": "venomVariables",
+          "name": "Variables"
+        }
+      ]
+    },
     "commands": [
       {
         "category": "Venom",
@@ -77,6 +94,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "lint": "eslint . --ext .ts",
+    "test": "npm run compile && node test/venomVariables.test.cjs",
     "watch": "tsc -watch -p ./",
     "download-api": "vscode-dts dev",
     "postdownload-api": "vscode-dts main",

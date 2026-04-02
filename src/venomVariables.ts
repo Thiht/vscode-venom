@@ -352,12 +352,33 @@ export function getScopedVariables(
       const parts: string[] = [];
       if (def?.from) parts.push(`from ${def.from}`);
       if (def?.regex) parts.push(`regex`);
-      seen.set(varName, {
+      const entry: ScopedVariable = {
         templateKey: varName,
         source: "step",
         stepIdentifier: step.identifier,
         stepIndex: step.index,
         detail: parts.length ? parts.join(", ") : undefined,
+      };
+      seen.set(varName, entry);
+
+      // Venom also exposes vars under stepName.varName for named steps
+      if (step.identifier !== step.varNames[0]) {
+        const prefixed = `${step.identifier}.${varName}`;
+        seen.set(prefixed, {
+          ...entry,
+          templateKey: prefixed,
+        });
+      }
+    }
+
+    // Step name itself is a valid top-level key (resolves to the step's output map)
+    if (step.varNames.length > 0) {
+      seen.set(step.identifier, {
+        templateKey: step.identifier,
+        source: "step",
+        stepIdentifier: step.identifier,
+        stepIndex: step.index,
+        detail: `step output (${step.varNames.join(", ")})`,
       });
     }
   }
@@ -583,8 +604,11 @@ export function stepHasRangeAtLine(
 }
 
 /**
- * Find the YAML line where `varName` is defined under a `vars:` block
- * within the given testcase (or at suite level).
+ * Find the YAML line where a variable is defined under a `vars:` block.
+ *
+ * Supports both flat keys (`token`) and dotted step-prefixed keys
+ * (`stepName.token`), which Venom resolves to the `token` var in the
+ * step named `stepName`.
  *
  * Returns the last matching definition to match Venom's "last definition wins".
  */
@@ -593,6 +617,20 @@ export function findVarDefinitionLine(
   varName: string,
   testcaseIndex: number | undefined
 ): number | undefined {
+  // Handle dotted step-prefixed form: stepName.actualVar
+  const dotIdx = varName.indexOf(".");
+  if (dotIdx > 0 && testcaseIndex !== undefined) {
+    const stepNameFilter = varName.slice(0, dotIdx);
+    const actualVar = varName.slice(dotIdx + 1);
+    const line = findVarInNamedStep(
+      text,
+      stepNameFilter,
+      actualVar,
+      testcaseIndex
+    );
+    if (line !== undefined) return line;
+  }
+
   const lines = text.split(/\r?\n/);
 
   let inSuiteVars = false;
@@ -676,4 +714,86 @@ export function findVarDefinitionLine(
   }
 
   return suiteVarLine;
+}
+
+/**
+ * Find a var defined inside the `vars:` block of a step with a given name.
+ */
+function findVarInNamedStep(
+  text: string,
+  stepName: string,
+  actualVar: string,
+  testcaseIndex: number
+): number | undefined {
+  const lines = text.split(/\r?\n/);
+  let inTestCases = false;
+  let currentTc = -1;
+  let currentStepName: string | undefined;
+  let inStepVars = false;
+  let resultLine: number | undefined;
+
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i];
+    const t = L.trimStart();
+    const indent = L.length - t.length;
+
+    if (/^testcases:\s*$/.test(t) && indent === 0) {
+      inTestCases = true;
+      currentTc = -1;
+      currentStepName = undefined;
+      inStepVars = false;
+      continue;
+    }
+    if (!inTestCases) continue;
+
+    if (
+      indent === 0 &&
+      t.length > 0 &&
+      !t.startsWith("#") &&
+      !/^testcases:/.test(t)
+    ) {
+      inTestCases = false;
+      continue;
+    }
+
+    // New testcase
+    if (/^ {2}-[\s]/.test(L)) {
+      currentTc += 1;
+      currentStepName = undefined;
+      inStepVars = false;
+      continue;
+    }
+
+    if (currentTc !== testcaseIndex) continue;
+
+    // New step
+    if (/^ {6}-[\s]/.test(L)) {
+      currentStepName = undefined;
+      inStepVars = false;
+    }
+
+    // Step name property
+    const nameMatch = t.match(/^name:\s*(.+)/);
+    if (nameMatch && indent >= 8) {
+      currentStepName = nameMatch[1].replace(/^["']|["']$/g, "").trim();
+    }
+
+    if (/^vars:\s*$/.test(t) && indent >= 8) {
+      inStepVars = true;
+      continue;
+    }
+
+    if (inStepVars && indent <= 8 && t.length > 0 && !t.startsWith("#")) {
+      inStepVars = false;
+    }
+
+    if (inStepVars && indent === 10 && currentStepName === stepName) {
+      const keyMatch = t.match(/^(\w[\w.-]*):/);
+      if (keyMatch && keyMatch[1] === actualVar) {
+        resultLine = i;
+      }
+    }
+  }
+
+  return resultLine;
 }

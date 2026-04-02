@@ -29,11 +29,18 @@ export function registerVenomDefinition(): vscode.Disposable {
       if (!topKey) return undefined;
 
       const tcIdx = findTestCaseIndexAtLine(text, position.line);
-      const line = findVarDefinitionLine(text, topKey, tcIdx);
+      // Try full dotted path first (e.g. login.token), then fall back to topKey
+      const line =
+        findVarDefinitionLine(text, varPath, tcIdx) ??
+        findVarDefinitionLine(text, topKey, tcIdx);
       if (line === undefined) return undefined;
 
+      // For dotted paths, the target key on the line is the last segment
+      const targetKey = varPath.includes(".")
+        ? varPath.slice(varPath.lastIndexOf(".") + 1)
+        : topKey;
       const lineText = document.lineAt(line).text;
-      const col = lineText.indexOf(topKey + ":");
+      const col = lineText.indexOf(targetKey + ":");
       if (col < 0) return undefined;
 
       return new vscode.Location(document.uri, new vscode.Position(line, col));

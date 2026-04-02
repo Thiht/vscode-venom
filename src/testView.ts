@@ -11,6 +11,53 @@ const testData = new WeakMap<
   { rawTestSuite: string; testSuite: TestSuite }
 >();
 
+function rangeForVenomLine(
+  line1Based: number,
+  rawTestSuite: string,
+  filePathForLog: string
+): vscode.Range | undefined {
+  const lines = rawTestSuite.split("\n");
+  if (line1Based < 1 || lines.length < line1Based) {
+    log.warn(`Line ${line1Based} doesn't exist in file ${filePathForLog}`);
+    return undefined;
+  }
+  const lineText = lines[line1Based - 1];
+  const lineStart = lineText.length - lineText.trimLeft().length;
+  const lineEnd = lineText.length;
+  return new vscode.Range(line1Based - 1, lineStart, line1Based - 1, lineEnd);
+}
+
+/** Assertion failures, decode errors, and output-dir issues → diff + peek location when parsable */
+function testMessageFromVenomText(
+  text: string,
+  test: vscode.TestItem
+): vscode.TestMessage {
+  const parsed = parseFailureMessage(text);
+  const useDiff =
+    parsed.expected !== undefined &&
+    parsed.actual !== undefined &&
+    parsed.expected !== "" &&
+    parsed.actual !== "";
+  const testMessage = useDiff
+    ? vscode.TestMessage.diff(parsed.raw, parsed.expected!, parsed.actual!)
+    : new vscode.TestMessage(parsed.raw);
+
+  if (parsed.line !== undefined && test.uri) {
+    const data = testData.get(test);
+    if (data) {
+      const range = rangeForVenomLine(
+        parsed.line,
+        data.rawTestSuite,
+        test.uri.fsPath
+      );
+      if (range) {
+        testMessage.location = new vscode.Location(test.uri, range);
+      }
+    }
+  }
+  return testMessage;
+}
+
 export const loadTestView = async (context: vscode.ExtensionContext) => {
   const testController = vscode.tests.createTestController(
     "venomTestController",
@@ -76,49 +123,11 @@ export const loadTestView = async (context: vscode.ExtensionContext) => {
         if (runResult.errors.length === 0 && runResult.failures.length === 0) {
           run.passed(test, Date.now() - start);
         } else {
-          const failureMessages = runResult.failures.map((message) => {
-            const parsedMessage = parseFailureMessage(message);
-            const testMessage =
-              parsedMessage.expected && parsedMessage.actual
-                ? vscode.TestMessage.diff(
-                    parsedMessage.raw,
-                    parsedMessage.expected,
-                    parsedMessage.actual
-                  )
-                : new vscode.TestMessage(parsedMessage.raw);
-
-            if (parsedMessage.line) {
-              const { rawTestSuite } = testData.get(test)!;
-              const rawTestSuiteLines = rawTestSuite.split("\n");
-
-              // Ignore the prefix spaces from the line to get a more beautiful visual
-              const lineStart =
-                rawTestSuiteLines.length >= parsedMessage.line
-                  ? rawTestSuiteLines[parsedMessage.line - 1].length -
-                    rawTestSuiteLines[parsedMessage.line - 1].trimLeft().length
-                  : 0;
-
-              // Get the line length
-              const lineEnd =
-                rawTestSuiteLines.length >= parsedMessage.line
-                  ? rawTestSuiteLines[parsedMessage.line - 1].length
-                  : (log.warn(
-                      `Line ${parsedMessage.line} doesn't exist in file ${test.uri?.fsPath}`
-                    ),
-                    1000);
-
-              const range = new vscode.Range(
-                parsedMessage.line - 1,
-                lineStart,
-                parsedMessage.line - 1,
-                lineEnd
-              );
-              testMessage.location = new vscode.Location(test.uri!, range);
-            }
-            return testMessage;
-          });
-          const errorMessages = runResult.errors.map(
-            (message) => new vscode.TestMessage(message)
+          const failureMessages = runResult.failures.map((message) =>
+            testMessageFromVenomText(message, test)
+          );
+          const errorMessages = runResult.errors.map((message) =>
+            testMessageFromVenomText(message, test)
           );
 
           if (failureMessages.length === 0) {

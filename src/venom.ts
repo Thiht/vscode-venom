@@ -91,6 +91,69 @@ interface ExecException {
   stderr: string;
 }
 
+/** Venom step/error dumps alongside the aggregated results JSON */
+const isVenomDumpJson = (file: string) => file.endsWith(".dump.json");
+
+/** Pick the JSON file that contains Venom test_results (ignore *.dump.json). */
+const pickTestResultsJsonFile = async (
+  outputDir: string,
+  jsonFiles: string[]
+): Promise<string | null> => {
+  const candidates = jsonFiles.filter((f) => !isVenomDumpJson(f));
+  if (candidates.length === 0) {
+    return null;
+  }
+  if (candidates.length === 1) {
+    return candidates[0];
+  }
+
+  if (candidates.includes("test_results.json")) {
+    return "test_results.json";
+  }
+
+  const testResultsNamed = candidates.filter((f) =>
+    /^test_results.*\.json$/i.test(f)
+  );
+  if (testResultsNamed.length === 1) {
+    return testResultsNamed[0];
+  }
+  if (testResultsNamed.length > 1) {
+    testResultsNamed.sort();
+    return testResultsNamed[0];
+  }
+
+  for (const name of [...candidates].sort()) {
+    try {
+      const raw = await readFile(resolve(outputDir, name), "utf8");
+      const data = JSON.parse(raw) as { test_suites?: unknown };
+      if (Array.isArray(data.test_suites)) {
+        return name;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
+
+const isLegacyTestResultShape = (data: unknown): data is LegacyTestResult => {
+  if (!data || typeof data !== "object") {
+    return false;
+  }
+  const suites = (data as LegacyTestResult).test_suites;
+  if (!Array.isArray(suites) || suites.length === 0) {
+    return false;
+  }
+  const first = suites[0];
+  return (
+    first != null &&
+    typeof (first as LegacyTestResultTestSuite).package === "string" &&
+    typeof (first as LegacyTestResultTestSuite).errors === "number" &&
+    typeof (first as LegacyTestResultTestSuite).failures === "number"
+  );
+};
+
 const findVenom = async () => {
   const venomBinary = vscode.workspace
     .getConfiguration("venom")
@@ -126,44 +189,9 @@ const findVenom = async () => {
   return venomBinary;
 };
 
-const checkVenomVersion = async () => {
-  const versionResult = await version();
-  if (!versionResult || versionResult.stdout.includes("v0")) {
-    if (versionResult?.venomBinary) {
-      const version = versionResult.stdout.split(": ")[1];
-      vscode.window.showErrorMessage("Expected Venom binary version ≥ 1.0.0", {
-        modal: true,
-        detail: `${versionResult.venomBinary} has version ${version}`,
-      });
-    }
-    return false;
-  }
-  return true;
-};
-
-export const version = async () => {
-  const venomBinary = await findVenom();
-  if (!venomBinary) {
-    return null;
-  }
-
-  let stdout, stderr: string;
-  try {
-    ({ stdout, stderr } = await execPromise(`${venomBinary} version`));
-  } catch (e) {
-    ({ stdout, stderr } = e as ExecException);
-  }
-
-  return { stdout, stderr, venomBinary };
-};
-
 export const run = async (filepath: string, cwd: string) => {
   const venomBinary = await findVenom();
   if (!venomBinary) {
-    return null;
-  }
-
-  if (!checkVenomVersion()) {
     return null;
   }
 
@@ -193,24 +221,20 @@ export const run = async (filepath: string, cwd: string) => {
   let files = await readdir(venomTmpDir);
   files = files.filter((file) => file.endsWith(".json"));
 
-  if (files.length !== 1) {
-    let error: string;
-    if (files.length === 0) {
-      error = [
-        "No JSON output file was generated.",
-        "This might be an issue related to your Venom version.",
-      ].join("\n");
-    } else {
-      error = [
-        `${files.length} JSON output files were generated instead of a single one.`,
-        "This might be an issue related to your Venom version.",
-        ...files.map((file) => `- ${file}`),
-      ].join("\n");
-    }
-    vscode.window.showErrorMessage("Unexpected Venom output", {
-      modal: true,
-      detail: error,
-    });
+  const resultsFilename = await pickTestResultsJsonFile(venomTmpDir, files);
+
+  if (!resultsFilename) {
+    const error =
+      files.length === 0
+        ? [
+            "No JSON output file was generated.",
+            "This might be an issue related to your Venom version.",
+          ].join("\n")
+        : [
+            "Could not identify a Venom test results JSON file in the output directory.",
+            "If you use a custom output layout, file an issue with sample file names.",
+            ...files.map((file) => `- ${file}`),
+          ].join("\n");
     rmSync(venomTmpDir, { recursive: true, force: true });
     return {
       command,
@@ -221,18 +245,44 @@ export const run = async (filepath: string, cwd: string) => {
       failures: [],
     };
   }
-  const filename = files[0];
 
-  const rawTestResults = await readFile(resolve(venomTmpDir, filename));
+  const rawTestResults = await readFile(resolve(venomTmpDir, resultsFilename));
   rmSync(venomTmpDir, { recursive: true, force: true });
 
   let errors: string[] = [];
   let failures: string[] = [];
-  if (filename === "test_results.json") {
-    // Venom < v1.1.0-beta.5, legacy format
-    const testResults = JSON.parse(
-      rawTestResults.toString()
-    ) as LegacyTestResult;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawTestResults.toString());
+  } catch (parseErr) {
+    const detail =
+      parseErr instanceof Error ? parseErr.message : String(parseErr);
+    return {
+      command,
+      cwd: process.cwd(),
+      stdout,
+      stderr,
+      errors: [
+        `Venom results file is not valid JSON (${resultsFilename}): ${detail}`,
+      ],
+      failures: [],
+    };
+  }
+
+  const failureText = (v: unknown): string | null => {
+    if (v == null || typeof v !== "object") {
+      return null;
+    }
+    const val = (v as TestResultFailure).value;
+    if (typeof val !== "string") {
+      return null;
+    }
+    const t = stripAnsi(val).trim();
+    return t.length > 0 ? t : null;
+  };
+
+  if (isLegacyTestResultShape(parsed)) {
+    const testResults = parsed;
 
     errors = testResults.test_suites
       .filter(
@@ -240,9 +290,9 @@ export const run = async (filepath: string, cwd: string) => {
           filepath.endsWith(testSuite.package) && testSuite.errors > 0
       )
       .flatMap((failedTestSuite) => failedTestSuite.testcases)
-      .filter((testCase) => testCase.errors !== null)
-      .flatMap((testCase) => testCase.errors)
-      .map((error) => error.value);
+      .flatMap((testCase) => testCase.errors ?? [])
+      .map(failureText)
+      .filter((t): t is string => t != null);
 
     failures = testResults.test_suites
       .filter(
@@ -250,12 +300,12 @@ export const run = async (filepath: string, cwd: string) => {
           filepath.endsWith(testSuite.package) && testSuite.failures > 0
       )
       .flatMap((failedTestSuite) => failedTestSuite.testcases)
-      .filter((testCase) => testCase.failures !== null)
-      .flatMap((testCase) => testCase.failures)
-      .map((failure) => failure.value);
+      .flatMap((testCase) => testCase.failures ?? [])
+      .map(failureText)
+      .filter((t): t is string => t != null);
   } else {
     // Venom ≥ v1.1.0-beta.5, new format
-    const testResults = JSON.parse(rawTestResults.toString()) as TestResult;
+    const testResults = parsed as TestResult;
 
     // This version dropped the difference between errors and failures
 
@@ -263,9 +313,10 @@ export const run = async (filepath: string, cwd: string) => {
       .filter((testSuite) => testSuite.nbTestcasesFail > 0)
       .flatMap((failedTestSuite) => failedTestSuite.testcases)
       .filter((testCase) => testCase.status === "FAIL")
-      .flatMap((testCase) => testCase.results)
-      .flatMap((result) => result.errors)
-      .map((failure) => failure.value);
+      .flatMap((testCase) => testCase.results ?? [])
+      .flatMap((result) => result.errors ?? [])
+      .map(failureText)
+      .filter((t): t is string => t != null);
   }
 
   return {
@@ -278,7 +329,15 @@ export const run = async (filepath: string, cwd: string) => {
   };
 };
 
-export const parseFailureMessage = (message: string) => {
+export interface ParsedFailureMessage {
+  raw: string;
+  expected?: string;
+  actual?: string;
+  /** 1-based source line in the .venom.yml when Venom reports one */
+  line?: number;
+}
+
+export const parseFailureMessage = (message: string): ParsedFailureMessage => {
   message = stripAnsi(message).trim();
 
   const re1 =
@@ -289,16 +348,26 @@ export const parseFailureMessage = (message: string) => {
       raw: message,
       expected: match1.groups.expected,
       actual: match1.groups.actual,
-      line: parseInt(match1.groups.line),
+      line: parseInt(match1.groups.line, 10),
     };
   }
 
-  const re2 = /\s+\(.*:(?<line>\d+)\)$/;
+  const re2 = /\s+\((?:[^\s:)]+):(?<line>\d+)\)\s*$/;
   const match2 = re2.exec(message);
-  if (match2?.groups) {
+  if (match2?.groups?.line) {
     return {
       raw: message,
-      line: parseInt(match2.groups.line),
+      line: parseInt(match2.groups.line, 10),
+    };
+  }
+
+  // YAML / assertion decode errors: "  line 10: cannot unmarshal..."
+  const reYaml = /(?:^|\n)\s*line\s+(?<line>\d+)\s*:/i;
+  const matchYaml = reYaml.exec(message);
+  if (matchYaml?.groups?.line) {
+    return {
+      raw: message,
+      line: parseInt(matchYaml.groups.line, 10),
     };
   }
 

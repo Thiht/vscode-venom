@@ -140,4 +140,87 @@ const diagScoped = getScopedVariables(diagCtx, 0, 0);
 assert.ok(diagScoped.some((s) => s.templateKey === "host"), "host should be in scope");
 assert.ok(!diagScoped.some((s) => s.templateKey === "undefined_var"), "undefined_var should NOT be in scope");
 
+// =============================================================
+// Step-prefixed variable references ({{.stepName.varName}})
+// =============================================================
+
+const stepPrefixYaml = `name: step prefix test
+vars:
+  baseUrl: https://example.com
+testcases:
+  - name: tc
+    steps:
+      - type: exec
+        name: login
+        script: echo "secret"
+        vars:
+          token:
+            from: result.systemout
+      - type: exec
+        name: get-user
+        script: echo '{"id":"42"}'
+        vars:
+          userId:
+            from: result.systemoutjson.id
+      - type: exec
+        name: verify
+        script: echo "{{.login.token}} {{.get-user.userId}} {{.token}}"
+`;
+
+const spCtx = parseVenomVariables(stepPrefixYaml);
+spCtx.globalVars = [];
+
+// At step index 2 (verify), prior steps 0 (login) and 1 (get-user) are in scope
+const spScoped = getScopedVariables(spCtx, 0, 2);
+
+// Flat keys should be present
+assert.ok(spScoped.some((s) => s.templateKey === "token"), "flat 'token' in scope");
+assert.ok(spScoped.some((s) => s.templateKey === "userId"), "flat 'userId' in scope");
+assert.ok(spScoped.some((s) => s.templateKey === "baseUrl"), "suite 'baseUrl' in scope");
+
+// Step-prefixed keys should also be present
+assert.ok(
+  spScoped.some((s) => s.templateKey === "login.token"),
+  "login.token should be in scope"
+);
+assert.ok(
+  spScoped.some((s) => s.templateKey === "get-user.userId"),
+  "get-user.userId should be in scope"
+);
+
+// Step names themselves should be valid top-level keys
+assert.ok(
+  spScoped.some((s) => s.templateKey === "login" && s.source === "step"),
+  "step name 'login' should be in scope"
+);
+assert.ok(
+  spScoped.some((s) => s.templateKey === "get-user" && s.source === "step"),
+  "step name 'get-user' should be in scope"
+);
+
+// findVarDefinitionLine with dotted path
+const spLines = stepPrefixYaml.split("\n");
+const tokenLine = spLines.findIndex((l) => l.trim() === "token:");
+assert.ok(tokenLine >= 0, "should find 'token:' line");
+assert.strictEqual(
+  findVarDefinitionLine(stepPrefixYaml, "login.token", 0),
+  tokenLine,
+  "login.token should resolve to token: line under login step"
+);
+
+const userIdLine = spLines.findIndex((l) => l.trim() === "userId:");
+assert.ok(userIdLine >= 0, "should find 'userId:' line");
+assert.strictEqual(
+  findVarDefinitionLine(stepPrefixYaml, "get-user.userId", 0),
+  userIdLine,
+  "get-user.userId should resolve to userId: line under get-user step"
+);
+
+// Dotted path that doesn't match any step -> undefined
+assert.strictEqual(
+  findVarDefinitionLine(stepPrefixYaml, "nonexistent.token", 0),
+  undefined,
+  "nonexistent.token should not resolve"
+);
+
 console.log("venomVariables tests ok");

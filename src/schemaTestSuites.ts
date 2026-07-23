@@ -102,6 +102,7 @@ export const loadSchemaTestSuites = async (
               delay: true,
               timeout: true,
               range: true,
+              name: true,
               type: {
                 type: "string",
                 const: customExecutor.executor,

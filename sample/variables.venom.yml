@@ -1,0 +1,98 @@
+name: Variables demo
+vars:
+  baseUrl: https://example.com
+  greeting: hello
+
+testcases:
+  - name: Suite vars available everywhere
+    steps:
+      - type: exec
+        script: echo "{{.baseUrl}}"
+        assertions:
+          - result.systemout ShouldContainSubstring "example.com"
+
+      - type: exec
+        script: echo "{{.greeting}} world"
+        assertions:
+          - result.systemout ShouldEqual "hello world"
+
+  - name: Step vars extracted and reused
+    steps:
+      - type: exec
+        script: echo "my-secret-token"
+        vars:
+          token:
+            from: result.systemout
+
+      - type: exec
+        name: use-token
+        script: echo "Authorization {{.token}}"
+        assertions:
+          - result.systemout ShouldContainSubstring "my-secret-token"
+
+  - name: Step vars with regex
+    steps:
+      - type: exec
+        name: parse-version
+        script: echo "app-v2.4.1-release"
+        vars:
+          version:
+            from: result.systemout
+            regex: v([0-9]+\.[0-9]+\.[0-9]+)
+
+      - type: exec
+        script: echo "Version is {{.version}}"
+        assertions:
+          - result.systemout ShouldEqual "Version is 2.4.1"
+
+  - name: Step vars with default
+    steps:
+      - type: exec
+        name: maybe-empty
+        script: echo ""
+        vars:
+          optionalValue:
+            from: result.systemout
+            default: "fallback"
+
+      - type: exec
+        script: echo "Got {{.optionalValue}}"
+
+  - name: Multiple vars from one step
+    steps:
+      - type: exec
+        name: multi-extract
+        script: |
+          echo '{"status":"ok","count":"42"}'
+        vars:
+          status:
+            from: result.systemoutjson.status
+          count:
+            from: result.systemoutjson.count
+
+      - type: exec
+        script: echo "status={{.status}} count={{.count}}"
+        assertions:
+          - result.systemout ShouldEqual "status=ok count=42"
+
+  - name: Chained vars across steps
+    steps:
+      - type: exec
+        name: step-a
+        script: echo "first"
+        vars:
+          fromA:
+            from: result.systemout
+
+      - type: exec
+        name: step-b
+        script: echo "{{.fromA}}-second"
+        vars:
+          fromB:
+            from: result.systemout
+
+      - type: exec
+        name: step-c
+        script: echo "chain={{.fromA}}+{{.fromB}}"
+        assertions:
+          - result.systemout ShouldEqual "chain=first+first-second"

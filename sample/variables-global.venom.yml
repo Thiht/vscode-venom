@@ -1,0 +1,30 @@
+name: Global variables demo
+vars:
+  localVar: from-suite
+
+testcases:
+  - name: Global vars from venomrc and var-files
+    steps:
+      - type: exec
+        script: echo "host={{.apiHost}} db={{.dbName}}"
+        assertions:
+          - result.systemout ShouldContainSubstring "host="
+          - result.systemout ShouldContainSubstring "db="
+
+      - type: exec
+        script: echo "timeout={{.timeout}}"
+
+      - type: exec
+        script: echo "rcVar={{.fromVenomrc}}"
+
+  - name: Global vars coexist with suite and step vars
+    steps:
+      - type: exec
+        name: extract-local
+        script: echo "{{.localVar}}"
+        vars:
+          extracted:
+            from: result.systemout
+
+      - type: exec
+        script: echo "local={{.localVar}} extracted={{.extracted}} global={{.apiHost}}"

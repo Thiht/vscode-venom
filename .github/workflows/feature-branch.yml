@@ -1,0 +1,23 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [feature/*, fix/*]
+  pull_request:
+    branches: [feature/*, fix/*]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci

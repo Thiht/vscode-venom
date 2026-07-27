@@ -3,18 +3,18 @@
   "displayName": "Venom",
   "description": "Venom integration with Visual Studio Code",
   "version": "1.7.1",
-  "publisher": "thiht",
+  "publisher": "socotra-internal",
   "author": {
-    "name": "Thibaut Rousseau"
+    "name": "Socotra"
   },
   "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Thiht/vscode-venom"
+    "url": "https://github.com/socotra/vscode-venom"
   },
   "bugs": {
-    "url": "https://github.com/Thiht/vscode-venom/issues"
+    "url": "https://github.com/socotra/vscode-venom/issues"
   },
   "icon": "vscode-venom.png",
   "engines": {
